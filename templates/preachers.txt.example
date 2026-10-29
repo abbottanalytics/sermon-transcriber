@@ -1,0 +1,35 @@
+# Speakers/preachers list.
+# ------------------------------------
+# FORMAT:
+#   Full name with title|count
+#   Example: Pastor Joel Wood|3
+#
+# COUNT STATES:
+#   (no pipe, or empty count)  — new entry, count = 0, not in menu yet
+#   |1                         — preached once, not in menu yet
+#   |2 or higher               — appears in the selection menu
+#   |5+                        — capped; always in menu; count never changes
+#
+# This file is updated automatically each time a speaker is selected.
+# The count is incremented ONCE PER RUN, not once per file.
+# When processing a directory of sermons or talks, you enter the speaker
+# once for the whole batch — so 10 files by the same person still only
+# adds 1 to the count. This keeps the count meaningful (number of separate
+# occasions the speaker was entered) rather than a raw file count.
+# Once a speaker reaches the cap (5+) their count stops incrementing,
+# so reruns and large batches will never inflate it past that point.
+#
+# TO REMOVE SOMEONE FROM THE MENU: delete their count (keep the name
+#   with no pipe, or remove the line entirely).
+# TO ADD SOMEONE MANUALLY: add a line with their name and a count.
+#   Use |2 to have them appear in the menu immediately.
+#   Leave the count blank or omit the pipe to start them at zero.
+#
+# Starter list for a new computer: regular preachers start at |2 so they
+# appear in the menu right away. Everyone else is added as they are entered.
+#
+Pastor Joel E. Wood|2
+Intern Aaron Phillip|2
+Intern Morgan Loughlean|2
+Intern Nicholas Okada|2
+Pastor Jim Megchelsen|2

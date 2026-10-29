@@ -1,0 +1,14 @@
+# Speaker fixes for preaching-schedule rows whose Preacher cell is blank.
+# ------------------------------------
+# Used only when the schedule has no preacher for that date and service.
+#
+# FORMAT:
+#   date,service,speaker
+#   - date is MMDDYY, matching the recording filename (e.g. 122924)
+#   - service is AM or PM
+#   - Lines starting with # are comments and are ignored.
+#
+# Example:
+#   122924,AM,Pastor Joel E. Wood
+#
+date,service,speaker

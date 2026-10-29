@@ -1,0 +1,58 @@
+__pycache__/
+.venv/
+*.pyc
+*.pyo
+.DS_Store
+
+# Audio files (large, don't version these)
+*.mp3
+*.m4a
+*.wav
+
+# Outputs (generated — don't version)
+*.cleaned.docx
+*.outline.docx
+*.summary.docx
+*.scripture.docx
+*.minutes.docx
+*.meeting_summary.docx
+*.actions.docx
+*.motions.docx
+*.discussion.docx
+*.podcast.txt
+*.motions_and_actions.txt
+*.cleaned.md
+*.outline.md
+*.summary.md
+
+# Raw transcripts and plain-text outputs (large, source data)
+# Remove lines below if you want to track transcripts in git
+audio*.txt
+# Whisper's timed outputs
+*.srt
+*.vtt
+*.tsv
+*.motions_and_actions.txt
+
+# One-off run scripts
+test_api_key.sh
+transcribe_*.sh
+
+# Release archives
+mp3transcription-pipeline-*.zip
+mp3transcription-pipeline-*.tar.gz
+
+# Per-machine settings live in ~/Library/Application Support/SermonTranscriber
+# (see app_home.py). Ignore stray copies here so church data is never committed.
+/preachers.txt
+/events.txt
+/speaker_initials.csv
+/schedule_overrides.csv
+/schedules/
+
+# API keys / secrets — never commit these
+config.txt
+google_service_account*.json
+*service_account*.json
+.env
+*.env

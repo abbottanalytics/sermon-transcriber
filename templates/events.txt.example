@@ -1,0 +1,21 @@
+# Events list for the transcription pipeline.
+# ------------------------------------
+# FORMAT:
+#   - Add events under [sermon] or [talk] sections
+#   - One event per line, no quotes needed
+#   - Lines starting with # are comments and are ignored
+#   - A "type a new name" option is always available at runtime
+#
+# SERMON EVENTS are worship services and church events.
+# TALK EVENTS are conferences and presentations.
+
+[sermon]
+Morning Worship Service
+Evening Worship Service
+Higher Ed (Adult Sunday School)
+Missions Presentation
+Missions Conference
+HOME Presentation
+Reformation Conference
+
+[talk]

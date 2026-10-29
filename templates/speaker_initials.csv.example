@@ -1,0 +1,29 @@
+# Preaching schedule initials (or names) → full speaker name with title.
+# ------------------------------------
+# The schedule's Preacher columns usually hold initials ("JW") or a surname.
+# Each row here maps one of those to the name used in the documents.
+#
+# FORMAT:
+#   initials,full_name
+#   - Matching ignores upper/lower case, spaces and punctuation,
+#     so "jw", "JW", "J W" and "JW?" all match the row "jw".
+#   - Add a row for each spelling the schedule uses (initials, surname,
+#     full name) if they differ.
+#   - Lines starting with # are comments and are ignored.
+#
+initials,full_name
+jw,Pastor Joel E. Wood
+jew,Pastor Joel E. Wood
+cu,Pastor Connor Underseth
+ap,Intern Aaron Phillip
+jm,Pastor Jim Megchelsen
+ml,Intern Morgan Loughlean
+no,Intern Nicholas Okada
+ld,Ligon Duncan
+rc,Ray Call
+billingslea,David Billingslea
+david billingslea,David Billingslea
+david zadok,David Zadok
+greg beale,Greg Beale
+ligon duncan,Ligon Duncan
+ray call,Ray Call

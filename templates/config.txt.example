@@ -1,0 +1,85 @@
+# Transcription Pipeline Configuration
+# ------------------------------------
+# WHERE THIS FILE LIVES:
+#   ~/Library/Application Support/SermonTranscriber/config.txt
+#   It is created automatically the first time you run the pipeline,
+#   and code updates never overwrite it. Do not share it with anyone.
+#
+# FORMAT:
+#   key=value
+#   - No quotes needed, even for paths with spaces
+#   - Use full paths only (no ~ shorthand)
+#   - Lines starting with # are comments and are ignored
+#
+# GETTING AN OPENAI API KEY:
+#   1. Go to https://platform.openai.com/api-keys
+#   2. Sign in or create an account
+#   3. Click "Create new secret key"
+#   4. Copy the key (starts with sk-) and paste it below
+#   If OPENAI_API_KEY is already set in your shell, that value is used
+#   and api_key below is ignored.
+#
+# Leave input_dir or output_dir blank to be prompted each time.
+#
+# PREACHING SCHEDULE:
+#   schedule_sheet is the pulpit schedule Google Sheet's URL. The automatic
+#   job reads speaker, title and Scripture from it (one tab per year).
+#   google_credentials is the service-account key file that lets this
+#   computer read the sheet; blank means google_service_account.json next to
+#   this file. See README "Connecting the Google Sheet".
+#   schedule_file is a schedule CSV instead, also the default for the menus.
+#   Leave it blank to pick one each time (the picker starts in the
+#   schedules/ folder next to this file).
+#
+# ENABLE/DISABLE CONTENT TYPES:
+#   Set to true or false to control which options appear in the menu.
+#   Disable types you never use to keep the interface simple.
+#   Example: a church AV team might set enable_meetings=false.
+
+enable_sermons=true
+enable_talks=true
+enable_meetings=true
+
+api_key=sk-paste-your-key-here
+input_dir=/Users/yourname/Documents/Church/Sermons/Audio
+output_dir=/Users/yourname/Documents/Church/Sermons/Output
+schedule_sheet=
+google_credentials=
+schedule_file=
+
+# AUTOMATIC PROCESSING (the background agent — see agent.sh):
+#   watch_dir       Folder the Sunday recordings land in; year subfolders
+#                   (Sermons/2026/...) are searched too. Required for the agent.
+#                   Outputs go to output_dir, in a subfolder per year.
+#   process_from    YYYY-MM-DD. Recordings dated earlier are ignored. Left blank,
+#                   it is set to the day of the first automatic run, so the
+#                   back catalog is not processed.
+#   settle_minutes  A recording must be unchanged this long before it is
+#                   processed, so a file still being copied is left alone.
+#   whisper_model   turbo (best), or small / base for faster runs on older Macs.
+#   higher_ed_teacher  Default teacher for Higher Ed classes (optional; Sermon
+#                   Helper can set it per class). Blank: the documents say
+#                   "the teacher".
+
+watch_dir=
+process_from=
+settle_minutes=10
+whisper_model=turbo
+higher_ed_teacher=
+
+# PUBLISHING TO GOOGLE DRIVE (see README "Publishing to Google Drive"):
+#   publish_dir       A folder inside Google Drive for Desktop, e.g.
+#                     /Users/AVdept/Library/CloudStorage/GoogleDrive-<account>/My Drive/Sermon Transcripts
+#                     Finished sermon documents are copied there; Drive uploads them.
+#                     Blank: nothing is published.
+#   publish_classes   true to publish Higher Ed class documents too (summary,
+#                     outline, discussion guide; class members aren't named)
+#   publish_class_transcripts
+#                     true to include each class's full transcript as well
+#                     (it keeps everything said in the room)
+#   publish_captions  true to add .srt/.vtt caption files with timestamps
+
+publish_dir=
+publish_classes=false
+publish_class_transcripts=false
+publish_captions=false

@@ -1,0 +1,37 @@
+[project]
+name = "sermon-transcriber"
+version = "0.1.0"
+description = "Transcribe and summarize sermons, talks and meetings (Whisper + GPT)"
+readme = "README.md"
+# 3.12 is the newest Python with PyTorch wheels for Intel Macs (see torch below).
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "openai>=1.0",
+    "openai-whisper>=20250625",
+    "python-docx>=1.1",
+    "tiktoken>=0.7",
+    "pypdf>=4.0",
+    # Bundled ffmpeg binary, so Whisper needs no Homebrew install
+    "imageio-ffmpeg>=0.5",
+    # Reading the preaching schedule Google Sheet as a service account
+    "google-auth>=2.30",
+    "requests>=2.31",
+    # PyTorch 2.2.2 is the last release built for Intel Macs, and it needs NumPy 1.x.
+    "torch==2.2.2 ; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "numpy<2 ; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # Whisper's numba: 0.62 / llvmlite 0.45 are the last with Intel Mac wheels.
+    "numba<=0.62.1 ; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "llvmlite<=0.45.1 ; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # google-auth's cryptography: 48.0.1 is the last with Intel Mac wheels.
+    "cryptography<=48.0.1 ; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+]
+
+[tool.uv]
+# Scripts, not an installable package
+package = false
+# Lock only for Macs, and fail to lock if either Mac type lacks wheels
+environments = ["sys_platform == 'darwin'"]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
