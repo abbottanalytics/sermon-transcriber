@@ -1,0 +1,25 @@
+# Special events: conferences and other services the church hosts.
+# ------------------------------------
+# One row per session. A recording named with the session's date and code,
+# e.g. 110726RC2.mp3, is processed like a sermon, using the speaker, title
+# and passage from its row. A code is only recognized on the dates listed
+# here, so add the rows before the event (or at least before processing).
+#
+# FORMAT:
+#   date,code,speaker,title,scripture,event
+#   - date: 11/6/26 (or 110626)
+#   - code: two letters plus a session number when there's more than one
+#     that day: RC1, RC2 (Reformation Conference), MC1 (Missions Conference)...
+#     AM, PM, HE and SS are taken by Sunday services.
+#   - speaker: full name with title, as it should appear in the documents
+#   - title and scripture: optional; leave blank if not known yet
+#   - event: the name shown in the documents, e.g. Reformation Conference
+#   - Put quotes around a value that contains a comma.
+#   - Lines starting with # are comments and are ignored.
+#
+# Example (a Friday evening session and two Saturday morning sessions):
+#   11/6/26,RC1,Dr. First Speaker,Title of the Friday Session,2 Timothy 3:14-17,Reformation Conference
+#   11/7/26,RC1,Dr. Second Speaker,"Title, With a Comma",Revelation 21:1-4,Reformation Conference
+#   11/7/26,RC2,Dr. First Speaker,Title of the Third Session,,Reformation Conference
+#
+date,code,speaker,title,scripture,event

@@ -6,7 +6,8 @@ Run by the launchd agent (see agent.sh) at run_times (Sundays 1, 7 and 11 pm) an
 hand. Each run:
 
   1. Scans watch_dir (and its year subfolders) for recordings named
-     MMDDYY + AM/PM/HE/SS (see recording_names.py)
+     MMDDYY + AM/PM/HE/SS, or a special event's code from
+     special_events.csv (see recording_names.py)
   2. Skips anything already done, dated before process_from, or still being
      written (modified less than settle_minutes ago)
   3. Sermons: Whisper transcript, then the full sermon documents, with the
@@ -61,7 +62,7 @@ MAX_ATTEMPTS = 3            # per version of a file, then it's left for a person
 RETRY_HOURS = 2             # wait between attempts, so a short outage doesn't use them all
 DEFAULT_SETTLE_MINUTES = 10
 # Same-day order: AM, Higher Ed, PM
-SERVICE_ORDER = {"AM": 0, "HE": 1, "SS": 1, "PM": 2}
+SERVICE_ORDER = {"AM": 0, "HE": 1, "SS": 1, "PM": 2}     # special events: by code, after
 
 log = logging.getLogger("auto_transcribe")
 
@@ -230,6 +231,10 @@ class ScheduleSource:
 
 def schedule_details(rec, schedules: ScheduleSource) -> tuple[dict, list[str]]:
     """Speaker / title / scripture for a sermon, and what a person should review."""
+    if rec.special is not None:         # a special event: its row in special_events.csv
+        return dict(rec.special), ([] if rec.special.get("speaker") else
+                                   [f"no speaker for {rec.service} on {rec.date:%-m/%-d/%y} "
+                                    f"in special_events.csv"])
     if not schedules.configured:
         return {}, ["no preaching schedule set up — speaker unknown"]
     schedule = schedules.for_year(rec.date.year)
@@ -281,7 +286,8 @@ def scan(watch_dir: Path, ledger: Ledger, process_from: date, settle_minutes: in
         to_process.append(audio)
 
     to_process.sort(key=lambda p: (parse_recording_name(p.stem).date,
-                                   SERVICE_ORDER[parse_recording_name(p.stem).service]))
+                                   SERVICE_ORDER.get(parse_recording_name(p.stem).service, 3),
+                                   parse_recording_name(p.stem).service))
     return to_process, waiting, newly_ignored
 
 
@@ -386,6 +392,13 @@ def run(dry_run: bool) -> int:
             log.info("First run: process_from set to %s — earlier recordings are ignored.", today)
     process_from = date.fromisoformat(config["process_from"])
 
+    # A mistake in special_events.csv makes every special event's recording look
+    # like a bad name, so say what's actually wrong
+    from special_events import problem
+    if problem():
+        log.error("Special events are off until this is fixed: %s", problem())
+        notify_once_a_day(ledger, "special_events", f"Special events are off: {problem()}")
+
     settle = int(config.get("settle_minutes") or DEFAULT_SETTLE_MINUTES)
     to_process, waiting, newly_ignored = scan(watch_dir, ledger, process_from, settle)
 
@@ -407,7 +420,8 @@ def run(dry_run: bool) -> int:
     for audio in newly_ignored:
         ledger.record(audio, status="ignored")
         log.info("Ignored (not a recording name): %s", audio)
-        notify(f"Skipped {audio.name}: name isn't MMDDYY + AM/PM/HE/SS.")
+        notify(f"Skipped {audio.name}: name isn't MMDDYY + AM/PM/HE/SS, or a special "
+               f"event listed in special_events.csv.")
     for audio in waiting:
         log.info("Waiting for %s to finish copying.", audio.name)
 

@@ -13,6 +13,8 @@ folder per recording:
         2026-11-01 AM Scripture.docx
         2026-11-01 AM Transcript.docx
         2026-11-01 AM Podcast description.txt
+    <publish_dir>/Special Events/2026/2026-11-07 Reformation Conference RC2 - <title> (<speaker>)/
+        2026-11-07 RC2 Summary.docx  ... (the same files as a sermon)
     <publish_dir>/Higher Ed/2026/2026-11-01 Higher Ed - Romans (Elder Smith)/   (if publish_classes=true)
         2026-11-01 Higher Ed Summary.docx
         2026-11-01 Higher Ed Outline.docx
@@ -109,15 +111,19 @@ def destination(audio: Path, entry: dict, root: Path) -> tuple[Path, str, str]:
         year = str(rec.date.year)
         kind = rec.kind
         label = f"{day} {rec.service}" if kind == "sermon" else f"{day} Higher Ed"
+        # A special event's folder names the event: "2026-11-07 Reformation Conference RC2"
+        named = f"{day} {rec.event} {rec.service}" if rec.special is not None else label
     else:                       # an unusual name, done by hand in Sermon Helper
         year = Path(entry.get("output_dir", "")).name
         year = year if year.isdigit() else entry.get("updated", "")[:4]
         kind, label = "sermon", audio.stem
+        named = label
 
     title, speaker = entry.get("title"), entry.get("speaker")
-    folder = label + (f" - {title}" if title and title != label else "")
+    folder = named + (f" - {title}" if title and title != label else "")
     folder += f" ({speaker})" if speaker else ""
-    section = "Higher Ed" if kind == "class" else "Sermons"
+    section = ("Higher Ed" if kind == "class" else
+               "Special Events" if rec and rec.special is not None else "Sermons")
     return root / section / year / _safe(folder), label, kind
 
 

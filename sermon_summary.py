@@ -92,8 +92,9 @@ def process_sermon(client, txt_path: Path, overwrite: bool,
     write_docx(base.with_suffix(".summary.docx"), meta + summary, overwrite)
 
     print("  Inferring Scripture...")
-    scripture = infer_scripture(client, cleaned)
-    write_docx(base.with_suffix(".scripture.docx"), meta + scripture, overwrite)
+    # Its own name: `scripture` is the schedule's passage, which the podcast text needs
+    scripture_notes = infer_scripture(client, cleaned)
+    write_docx(base.with_suffix(".scripture.docx"), meta + scripture_notes, overwrite)
 
     print("  Writing podcast description...")
     podcast = create_podcast_description(client, cleaned, speaker, event, scripture)

@@ -25,6 +25,7 @@ Name it with the date (**month, day, two-digit year**) and the service code:
 | Morning sermon | `110126AM.mp3` |
 | Evening sermon | `110126PM.mp3` |
 | Higher Ed (adult Sunday School) | `110126HE.mp3` |
+| A conference or special event | see [section 5](#5-conferences-and-other-special-events) |
 
 - Upper or lower case both work, and anything after the code is ignored: `110126AM-final.mp3` is fine.
 - `SS` instead of `HE` is accepted too, from when Higher Ed was called Sunday School.
@@ -63,7 +64,8 @@ At each check, for every new recording:
 | *Transcribed 1: 110126AM.mp3* | All done | Nothing |
 | *…Review in Sermon Helper: preacher initials 'SE' aren't in speaker_initials.csv* | The schedule's preacher wasn't recognized | Run Sermon Helper and pick the speaker (below) |
 | *…Review in Sermon Helper: 11/1/26 AM isn't in the preaching schedule* | That Sunday's row is missing from the pulpit sheet | Run Sermon Helper and enter the speaker, title and passage |
-| *Skipped sermon.mp3: name isn't MMDDYY + AM/PM/HE/SS* | The file name wasn't recognized | Rename it, e.g. `110126AM.mp3` |
+| *Skipped sermon.mp3: name isn't MMDDYY + AM/PM/HE/SS, or a special event…* | The file name wasn't recognized | Rename it, e.g. `110126AM.mp3`. For an event session, check the code is in `special_events.csv` for that date |
+| *Special events are off: special_events.csv line 29: …* | A mistake in the special events file | Tell Dean; that line needs fixing |
 | *Problem processing 110126AM.mp3 — see logs/auto.log* | Something went wrong, usually the internet | Nothing at first: it tries again at the next check (at least two hours later), up to 3 times. If it keeps failing, tell Dean |
 | *Couldn't copy … to Google Drive* | Google Drive isn't running or is signed out | Open **Google Drive** (in Applications) and make sure it's signed in as newlifeavdept@gmail.com. The files are copied at the next check |
 | *Can't read the Sermons folder. It needs Full Disk Access* | A Mac permission was removed | Tell Dean |
@@ -93,7 +95,38 @@ What you enter is remembered, so if that recording is ever redone, your answers 
 
 ---
 
-## 5. Keeping the Mac ready
+## 5. Conferences and other special events
+
+Conferences and other events the church hosts work the same way, with one step beforehand.
+
+**Before the event,** Dean (or whoever looks after this Mac) adds one line per session to `special_events.csv` in the settings folder:
+
+```
+date,code,speaker,title,scripture,event
+11/6/26,RC1,Dr. First Speaker,Title of the Friday Session,2 Timothy 3:14-17,Reformation Conference
+11/7/26,RC1,Dr. Second Speaker,Title of the First Saturday Session,,Reformation Conference
+11/7/26,RC2,Dr. First Speaker,Title of the Second Saturday Session,,Reformation Conference
+```
+
+The code is two letters for the event (RC = Reformation Conference) plus the session number for that day.
+
+**During the event, save each session** in the Sermons folder as the date plus its code:
+
+| Session | File name |
+|---|---|
+| Friday 11/6/26, evening | `110626RC1.mp3` |
+| Saturday 11/7/26, first session | `110726RC1.mp3` |
+| Saturday 11/7/26, second session | `110726RC2.mp3` |
+
+- They're processed at the **Sunday 1 pm check**, or right away with **`Check for Recordings.command`**.
+- The documents go in Google Drive under **Special Events**, e.g. `Special Events/2026/2026-11-07 Reformation Conference RC2 - <title> (<speaker>)`.
+- If a session's speaker isn't in the file yet, it's flagged "Review in Sermon Helper" and held back from Drive, like a Sunday sermon.
+- **Not recorded locally?** Dean can download the audio from the YouTube livestream, name it the same way, and put it in the Sermons folder.
+- A file name with a code that isn't in `special_events.csv` for that date is skipped as a bad name. That catches typos like `RX1`.
+
+---
+
+## 6. Keeping the Mac ready
 
 - **Putting it to sleep is fine.** The Mac wakes itself at 12:55 pm on Sundays, stays awake through the evening checks, and a check missed while it slept runs as soon as it wakes.
 - **Please don't shut it down on Sundays.** If it is shut down, it turns itself on at 12:55 pm Sunday. Any other time, the recordings are processed when someone next turns it on and logs in.
@@ -102,7 +135,7 @@ What you enter is remembered, so if that recording is ever redone, your answers 
 
 ---
 
-## 6. Where everything is
+## 7. Where everything is
 
 | What | Where |
 |---|---|
@@ -116,7 +149,7 @@ The app updates itself when a new version is released. There's nothing to downlo
 
 ---
 
-## 7. Common questions
+## 8. Common questions
 
 **The preacher was a guest who isn't in the list.** Choose *Other* in Sermon Helper and type their name with title. If they'll preach again, ask Dean to add their initials to the speaker list, so the schedule lookup recognizes them next time.
 

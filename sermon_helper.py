@@ -255,7 +255,10 @@ class Helper:
             sched, notes = schedule_details(rec, self.schedules)
         base = entry.get("confirmed") or sched
 
-        speaker = self.pick_speaker(base.get("speaker"), sched, notes, bool(entry.get("confirmed")))
+        source_name = ("special_events.csv" if rec and rec.special is not None
+                       else "the preaching schedule")
+        speaker = self.pick_speaker(base.get("speaker"), sched, notes, bool(entry.get("confirmed")),
+                                    source_name)
         if speaker is None:
             return
         title = dlg.ask("Sermon title:", base.get("title") or "")
@@ -324,11 +327,11 @@ class Helper:
         return ""
 
     def pick_speaker(self, default: str | None, sched: dict, notes: list[str],
-                     was_confirmed: bool) -> str | None:
+                     was_confirmed: bool, source_name: str = "the preaching schedule") -> str | None:
         if was_confirmed:
             source = f"Last confirmed here: {default}"
         elif default:
-            source = f"From the preaching schedule: {default}"
+            source = f"From {source_name}: {default}"
         elif sched.get("speaker_raw"):
             source = (f"The preaching schedule says '{sched['speaker_raw']}', which isn't in "
                       f"speaker_initials.csv yet.")

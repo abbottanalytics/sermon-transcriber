@@ -177,6 +177,7 @@ A background agent checks the recordings folder on **Sundays at 1 pm, 7 pm and 1
 |------|-----------|
 | `110126AM.mp3`, `110126PM.mp3` | Sermon: transcript plus all sermon documents, with the speaker, title and Scripture from the [preaching schedule](#connecting-the-google-sheet) |
 | `110126HE.mp3`, `110126SS.mp3` | Higher Ed class: transcript, plus a class summary, lesson outline and discussion guide in which class members aren't named. The teacher is `higher_ed_teacher` from `config.txt` if set, or whoever is entered in Sermon Helper |
+| `110726RC2.mp3` and other [special event](#special-events-conferences) codes | A conference session listed in `special_events.csv`: processed like a sermon, published under Special Events |
 | anything else | Not processed. A notification says it was skipped |
 
 **Set it up**, in the install folder:
@@ -357,6 +358,26 @@ Whisper's raw working files (`.txt`, `.json`, `.tsv`) and the logs stay on the M
 
 ---
 
+## Special events (conferences)
+
+Conferences and other events the church hosts aren't in the pulpit sheet. Their sessions are listed in **`special_events.csv`** in the settings folder, one line per session:
+
+```
+date,code,speaker,title,scripture,event
+11/6/26,RC1,Dr. First Speaker,Title of the Friday Session,2 Timothy 3:14-17,Reformation Conference
+11/7/26,RC1,Dr. Second Speaker,"Title, With a Comma",,Reformation Conference
+11/7/26,RC2,Dr. First Speaker,Title of the Third Session,,Reformation Conference
+```
+
+- **Codes:** two letters per event plus a session number for the day: RC1, RC2, MC1… AM, PM, HE and SS are reserved for Sundays.
+- **File names:** a recording named with the date and code, e.g. `110726RC2.mp3`, is processed as a sermon with that row's speaker, title, passage and event.
+- **Unlisted codes:** a code is recognized only on the dates it's listed, so a typo is still skipped as a bad name. Add the rows before the event's recordings are processed.
+- **Blank fields:** a blank speaker flags the recording for review in Sermon Helper and holds it back from Drive. A blank title or passage is just left out.
+- **Drive:** published sessions go under `Special Events/<year>/` in the Drive folder.
+- **Checking the file:** `.venv/bin/python3 special_events.py` lists the sessions as the pipeline reads them, or names the line with a mistake. While the file has a mistake, special events are off and the agent sends a notification.
+
+---
+
 ## Events list
 
 `events.txt` (in the settings folder) contains the selectable service and event names, organized into two sections:
@@ -434,6 +455,7 @@ agent_schedule.py              # run_times → the agent's schedule and Sunday s
 SERMON_TRANSCRIPTION_PROCESSING.md  # Week-to-week guide for the AV team
 sermon_helper.py / mac_dialogs.py  # Sermon Helper itself / the native dialog helpers
 drive_publish.py               # Copies finished documents into the Google Drive folder
+special_events.py              # Conference / special event sessions (special_events.csv)
 ```
 
 The older runner scripts (`run_sermon_summary.py`, `run_meeting_summary.py`,

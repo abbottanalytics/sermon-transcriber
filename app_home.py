@@ -11,6 +11,7 @@ code folder, so updating the code (git pull) never touches it:
         events.txt              Selectable service / event names
         speaker_initials.csv    Schedule initials → full speaker names
         schedule_overrides.csv  Speaker fixes for blank schedule cells
+        special_events.csv      Conference / special event sessions
         schedules/              Preaching schedule CSVs
 
 Set SERMON_TRANSCRIBER_HOME to use a different folder (e.g. for testing).
@@ -38,7 +39,7 @@ DEFAULT_HOME  = Path.home() / "Library" / "Application Support" / "SermonTranscr
 # Files created on first use. Older installs kept the first three
 # in the code folder; those copies are carried over when present.
 DATA_FILES  = ["config.txt", "preachers.txt", "events.txt",
-               "speaker_initials.csv", "schedule_overrides.csv"]
+               "speaker_initials.csv", "schedule_overrides.csv", "special_events.csv"]
 LEGACY_FILES = {"config.txt", "preachers.txt", "events.txt"}
 
 # Holds the API key — readable by this user only.

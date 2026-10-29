@@ -48,6 +48,7 @@ mp3transcription-pipeline-*.tar.gz
 /events.txt
 /speaker_initials.csv
 /schedule_overrides.csv
+/special_events.csv
 /schedules/
 
 # API keys / secrets — never commit these
