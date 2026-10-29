@@ -40,8 +40,8 @@ Name it with the date (**month, day, two-digit year**) and the service code:
 | Check | Usually picks up |
 |---|---|
 | **1 pm** | The morning sermon (service ends about 11:10) and Higher Ed |
-| **7 pm** | Anything saved during the afternoon, or a Higher Ed class saved late |
-| **11 pm** | The evening sermon (service ends about 6:15) |
+| **7 pm** | The evening sermon (service ends about 6:15) or anything saved during the afternoon (Higher Ed classes) |
+| **11 pm** | Anything posted late during the day or if the Mac was shut down during the day |
 
 At each check, for every new recording:
 
