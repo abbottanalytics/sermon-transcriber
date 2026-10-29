@@ -17,6 +17,7 @@ folder per recording:
         2026-11-01 Higher Ed Summary.docx
         2026-11-01 Higher Ed Outline.docx
         2026-11-01 Higher Ed Discussion guide.docx
+        2026-11-01 Higher Ed Podcast description.txt
 
 Rules:
   - A sermon is published only when it's done and nothing needs review, so a
@@ -63,6 +64,7 @@ CLASS_FILES = [
     (".summary.docx", "Summary.docx"),
     (".outline.docx", "Outline.docx"),
     (".discussion.docx", "Discussion guide.docx"),
+    (".podcast.txt", "Podcast description.txt"),
 ]
 CLASS_TRANSCRIPT = [(".cleaned.docx", "Transcript.docx")]
 CAPTION_FILES = [(".srt", "Captions.srt"), (".vtt", "Captions.vtt")]

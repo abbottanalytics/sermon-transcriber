@@ -10,7 +10,8 @@ Supported content types:
   meeting — cleaned transcript, minutes, summary, action items, motions
   talk    — cleaned transcript, outline, summary (no scripture)
   class   — Higher Ed (adult Sunday School): cleaned transcript, class summary,
-            lesson outline, discussion guide (--speaker is the teacher)
+            lesson outline, discussion guide, podcast description
+            (--speaker is the teacher; labeled Higher Ed unless --event says otherwise)
 
 USAGE
 -----
@@ -208,7 +209,8 @@ def main():
     ap.add_argument("--speaker", help="Speaker name with title (e.g. 'Pastor Joel Wood')")
     ap.add_argument("--schedule", help="Path to preaching schedule CSV for automatic speaker lookup")
     ap.add_argument("--event", help="Service or event name (e.g. 'Morning Worship')")
-    ap.add_argument("--title", help="Talk or sermon title")
+    ap.add_argument("--title", help="Talk or sermon title, or a class's topic")
+    ap.add_argument("--scripture", help="Scripture passage (sermon or class), e.g. 'Joshua 1'")
     ap.add_argument("--overwrite", action="store_true", help="Overwrite existing output files")
     ap.add_argument("--skip-whisper", action="store_true",
                     help="Skip Whisper even for audio files (assumes .txt already exists)")
@@ -268,6 +270,7 @@ def main():
             event=args.event or None,
             title=args.title or None,
             schedule=schedule,
+            scripture=args.scripture or None,
         )
 
     print("\nDONE.")

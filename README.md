@@ -10,7 +10,7 @@ Supports four content types — each produces a different set of outputs:
 | `sermon` | Cleaned transcript, outline, summary, scripture inference |
 | `meeting` | Cleaned transcript, minutes, summary, action items, motions |
 | `talk` | Cleaned transcript, outline, summary |
-| `class` | Higher Ed (adult Sunday School): cleaned transcript, class summary, lesson outline, discussion guide |
+| `class` | Higher Ed (adult Sunday School): cleaned transcript, class summary, lesson outline, discussion guide, podcast description |
 
 ---
 
@@ -235,6 +235,7 @@ output_dir=/Users/yourname/.. # Default output folder
 schedule_file=                # Default preaching schedule CSV (optional)
 
 enable_sermons=true           # Show/hide Sermon option in the menu
+enable_classes=true           # Show/hide Higher Ed class option in the menu
 enable_talks=true             # Show/hide Talk option in the menu
 enable_meetings=true          # Show/hide Meeting option in the menu
 ```
@@ -325,6 +326,7 @@ Sermon Transcripts/
       2026-11-01 Higher Ed Summary.docx
       2026-11-01 Higher Ed Outline.docx
       2026-11-01 Higher Ed Discussion guide.docx
+      2026-11-01 Higher Ed Podcast description.txt
 ```
 
 Whisper's raw working files (`.txt`, `.json`, `.tsv`) and the logs stay on the Mac.
@@ -400,8 +402,9 @@ All talk documents include a **Speaker**, **Title**, and **Event** header when p
 - `110126HE.summary.docx` — topic and text, the teaching, the discussion, Scripture referenced, takeaways
 - `110126HE.outline.docx` — the lesson as the teacher led it, with discussion points marked
 - `110126HE.discussion.docx` — questions raised in class, questions left open, and new questions for reflection
+- `110126HE.podcast.txt` — 2–3 sentence description starting "*Teacher* teaching on *topic* in Higher Ed (Adult Sunday School)."
 
-The summary, outline and discussion guide don't name class members ("a participant") and leave out personal details people shared, such as prayer requests. They carry a **Teacher**, **Topic**, **Scripture** and **Event** header when provided.
+The summary, outline and discussion guide don't name class members ("a participant") and leave out personal details people shared, such as prayer requests. They carry a **Teacher**, **Topic** and **Scripture** header when provided, and an **Event** header that always says Higher Ed (Adult Sunday School) unless `--event` gives another. The file name doesn't matter: any recording run as a class gets all of this, whether it comes from the automatic job, Sermon Helper, the `run_pipeline.command` menu (*Higher Ed class*) or `run_pipeline.py --type class`.
 
 ---
 

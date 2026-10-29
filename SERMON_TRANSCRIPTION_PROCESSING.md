@@ -48,7 +48,7 @@ At each check, for every new recording:
 2. **Looks up the preaching schedule** (the pulpit Google Sheet) for the speaker, title and Scripture.
 3. **Writes the documents:**
    - **Sermon:** summary, outline, Scripture notes, a cleaned-up transcript, and a short podcast description.
-   - **Higher Ed:** class summary, lesson outline and a discussion guide. These never name class members.
+   - **Higher Ed:** class summary, lesson outline, a discussion guide and a short podcast description, all labeled Higher Ed (Adult Sunday School). These never name class members.
 4. **Copies them to the shared Google Drive folder**, one folder per Sunday service, e.g. `Sermons/2026/2026-11-01 AM - Praising God's Justice (Pastor Joel E. Wood)`.
 5. **Shows a notification** in the top-right corner of the screen, e.g. *"Transcribed 1: 110126AM.mp3"*.
 

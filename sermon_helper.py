@@ -33,6 +33,7 @@ from pathlib import Path
 
 import mac_dialogs as dlg
 from app_home import data_file, ensure, read_config
+from class_summary import HIGHER_ED_EVENT
 from drive_publish import publish, publish_root
 from auto_transcribe import (LEDGER_NAME, Ledger, ScheduleSource, log, output_dir_for,
                              schedule_details, setup_logging)
@@ -213,7 +214,8 @@ class Helper:
         summary = "\n".join(f"{k}: {v}" for k, v in (("Teacher", teacher), ("Topic", title),
                             ("Passage", scripture)) if v)
         go = dlg.buttons(f"Make the class documents for {audio.name}?\n\n{summary}\n\n"
-                         f"You'll get a class summary, a lesson outline and a discussion guide. "
+                         f"You'll get a class summary, a lesson outline, a discussion guide "
+                         f"and a podcast description. "
                          f"Class members aren't named in them. This takes {timing}. "
                          f"Progress shows in the Terminal window.",
                          ["Cancel", "Make documents"], "Make documents")
@@ -230,7 +232,7 @@ class Helper:
             process_file(client, audio, content_type="class", overwrite=True,
                          skip_whisper=have_transcript, style="normal", agenda_md=None,
                          output_dir=out_dir, speaker=teacher or None,
-                         event="Higher Ed (Adult Sunday School)", title=title or None,
+                         event=HIGHER_ED_EVENT, title=title or None,
                          scripture=scripture or None, whisper_model=self.whisper_model)
         except Exception as e:
             log.exception("Sermon Helper: failed for %s", audio.name)

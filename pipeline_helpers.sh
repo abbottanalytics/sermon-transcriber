@@ -40,6 +40,8 @@ read_config() {
     ENABLE_SERMONS=true
     ENABLE_TALKS=true
     ENABLE_MEETINGS=true
+    ENABLE_CLASSES=true
+    DEFAULT_HE_TEACHER=""
     if [[ ! -f "$CONFIG_FILE" ]]; then return; fi
 
     while IFS='=' read -r key value; do
@@ -67,6 +69,8 @@ read_config() {
             enable_sermons)  ENABLE_SERMONS="$value"   ;;
             enable_talks)    ENABLE_TALKS="$value"     ;;
             enable_meetings) ENABLE_MEETINGS="$value"  ;;
+            enable_classes)  ENABLE_CLASSES="$value"   ;;
+            higher_ed_teacher) DEFAULT_HE_TEACHER="$value" ;;
         esac
     done < "$CONFIG_FILE"
 }

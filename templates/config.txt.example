@@ -37,6 +37,7 @@
 #   Example: a church AV team might set enable_meetings=false.
 
 enable_sermons=true
+enable_classes=true
 enable_talks=true
 enable_meetings=true
 

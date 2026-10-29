@@ -1,8 +1,11 @@
 from pathlib import Path
 from transcription_summary_core import (
-    call_llm, read_text, write_docx,
+    call_llm, read_text, write_docx, write_text,
     clean_transcript, build_metadata_header,
 )
+
+# Every class document is labeled with this unless another event is given
+HIGHER_ED_EVENT = "Higher Ed (Adult Sunday School)"
 
 # A class is a teacher plus a room of people talking. The transcript has no
 # speaker labels, and what members share (prayer requests, family, health) is
@@ -11,7 +14,9 @@ PRIVACY_RULES = (
     "This is an adult Sunday School class: a teacher plus discussion among class members. "
     "The transcript has no speaker labels.\n"
     "Privacy rules (important — these documents are shared with people who weren't there):\n"
-    "- Never name class members, even if names are spoken in the recording. "
+    "- Never use the name of anyone in the room or anyone they mention (family, friends, "
+    "church members) — not for class members, and not for the teacher. Biblical, historical "
+    "and published figures (Moses, Augustine, an author cited) are fine. "
     "Write 'a participant', 'one member', 'several people'.\n"
     "- {teacher_rule}\n"
     "- Leave out personal details anyone shared: prayer requests, health, family, "
@@ -23,8 +28,13 @@ PRIVACY_RULES = (
 
 
 def _rules(teacher: str | None) -> str:
-    teacher_rule = (f"The teacher is {teacher}; you may name them." if teacher else
-                    "Refer to the person leading as 'the teacher'; don't guess their name.")
+    # Only the name a person entered is used: never one heard in the recording,
+    # which may be wrong (Whisper) or belong to someone else in the room
+    teacher_rule = (f"The teacher is {teacher}. Refer to the teacher only as '{teacher}' or "
+                    "'the teacher' — never by any other name, even if the recording says one."
+                    if teacher else
+                    "Refer to the person leading only as 'the teacher'. Never use a name "
+                    "from the recording for them.")
     return PRIVACY_RULES.format(teacher_rule=teacher_rule)
 
 
@@ -81,10 +91,32 @@ def create_discussion_guide(client, cleaned_md: str, teacher: str = None) -> str
     return call_llm(client, system, cleaned_md).strip()
 
 
+def create_podcast_description(client, cleaned_md: str, teacher: str = None,
+                               topic: str = None, scripture: str = None,
+                               event: str = HIGHER_ED_EVENT) -> str:
+    subject = topic or scripture or "[the lesson's topic or passage]"
+    opening = (f"{teacher} teaching on {subject} in {event}." if teacher else
+               f"The {event} class studies {subject}.")
+    known = (f"- The passage studied is {scripture}; use it exactly as written.\n"
+             if scripture else "")
+    system = (
+        _rules(teacher)
+        + "\nWrite a 2-3 sentence podcast episode description for this class.\n"
+        + known
+        + f"- Begin the description with: '{opening}' "
+        "If the topic isn't given, put the lesson's topic or main passage in its place.\n"
+        "- Follow with 1-2 sentences on what the class studied and discussed.\n"
+        "- Plain text only — no markdown, no bullet points.\n"
+        "- Keep it engaging and suitable for a podcast app listing."
+    )
+    return call_llm(client, system, cleaned_md[:6000]).strip()
+
+
 def process_class(client, txt_path: Path, overwrite: bool,
                   out_base: Path = None, teacher: str = None, event: str = None,
                   title: str = None, scripture: str = None):
     base = out_base if out_base else txt_path.with_suffix("")
+    event = event or HIGHER_ED_EVENT
     meta = build_metadata_header({"Teacher": teacher, "Topic": title,
                                   "Scripture": scripture, "Event": event})
 
@@ -105,3 +137,7 @@ def process_class(client, txt_path: Path, overwrite: bool,
     print("  Writing discussion guide...")
     guide = create_discussion_guide(client, cleaned, teacher)
     write_docx(base.with_suffix(".discussion.docx"), meta + guide, overwrite)
+
+    print("  Writing podcast description...")
+    podcast = create_podcast_description(client, cleaned, teacher, title, scripture, event)
+    write_text(base.with_suffix(".podcast.txt"), podcast, overwrite)

@@ -28,6 +28,8 @@ except ImportError:
 
 from openai import OpenAI
 from docx import Document
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from docx.shared import Pt
 
 MODEL = "gpt-4.1-mini"
@@ -58,6 +60,36 @@ def build_metadata_header(fields: dict) -> str:
 # FILE OUTPUT HELPERS
 # -------------------------------------------------
 
+# **bold**, __bold__, *italic* or _italic_ inside a line
+_INLINE = re.compile(r"(\*\*.+?\*\*|__.+?__|(?<![*\w])\*(?!\s).+?(?<!\s)\*(?![*\w])|(?<!\w)_(?!\s).+?(?<!\s)_(?!\w))")
+_BULLET = re.compile(r"^(\s*)[-*•]\s+(.*)$")
+
+
+def _add_inline(paragraph, text: str):
+    """Add text to a paragraph, turning Markdown bold/italic marks into formatting."""
+    for part in _INLINE.split(text):
+        if not part:
+            continue
+        if (part.startswith("**") and part.endswith("**") or
+                part.startswith("__") and part.endswith("__")) and len(part) > 4:
+            paragraph.add_run(part[2:-2]).bold = True
+        elif part[0] in "*_" and part[-1] == part[0] and len(part) > 2:
+            paragraph.add_run(part[1:-1]).italic = True
+        else:
+            paragraph.add_run(part)
+
+
+def _add_rule(doc):
+    """A horizontal line, for a Markdown '---'."""
+    p = doc.add_paragraph()
+    border = OxmlElement("w:pBdr")
+    bottom = OxmlElement("w:bottom")
+    for key, value in (("w:val", "single"), ("w:sz", "6"), ("w:space", "1"), ("w:color", "999999")):
+        bottom.set(qn(key), value)
+    border.append(bottom)
+    p._p.get_or_add_pPr().append(border)
+
+
 def write_docx(path, markdown_text, overwrite):
     if path.exists() and not overwrite:
         print(f"SKIP (exists): {path}")
@@ -66,19 +98,28 @@ def write_docx(path, markdown_text, overwrite):
     doc = Document()
 
     for line in markdown_text.splitlines():
-        if line.startswith("### "):
-            doc.add_heading(line[4:], level=3)
-        elif line.startswith("## "):
-            doc.add_heading(line[3:], level=2)
-        elif line.startswith("# "):
-            doc.add_heading(line[2:], level=1)
+        line = line.rstrip()            # Markdown's trailing-space line breaks
+        heading = re.match(r"^(#{1,3})\s+(.*)$", line)
+        bullet = _BULLET.match(line)
+        if heading:
+            # Headings are bold already; drop any marks inside them
+            doc.add_heading(re.sub(r"\*\*|__", "", heading.group(2)), level=len(heading.group(1)))
+        elif re.fullmatch(r"\s*([-*_])(\s*\1){2,}\s*", line):
+            _add_rule(doc)
         elif line.startswith("> "):
-            p = doc.add_paragraph(line[2:])
+            p = doc.add_paragraph()
+            _add_inline(p, line[2:])
             p.paragraph_format.left_indent = Pt(18)
+        elif bullet:
+            # Indented bullets (sub-points) go one level in
+            level = 2 if len(bullet.group(1).expandtabs(4)) >= 2 else 1
+            p = doc.add_paragraph(style="List Bullet" if level == 1 else "List Bullet 2")
+            _add_inline(p, bullet.group(2))
         elif line.strip() == "":
             doc.add_paragraph("")
         else:
-            doc.add_paragraph(line)
+            p = doc.add_paragraph()
+            _add_inline(p, line)
 
     doc.save(path)
     print(f"WROTE: {path}")

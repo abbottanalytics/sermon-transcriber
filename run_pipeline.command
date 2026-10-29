@@ -92,12 +92,13 @@ echo ""
 TYPE_OPTIONS=()
 TYPE_LABELS=()
 [[ "$ENABLE_SERMONS"  == "true" ]] && TYPE_OPTIONS+=("sermon")  && TYPE_LABELS+=("Sermon")
+[[ "$ENABLE_CLASSES"  == "true" ]] && TYPE_OPTIONS+=("class")   && TYPE_LABELS+=("Higher Ed class (adult Sunday School)")
 [[ "$ENABLE_TALKS"    == "true" ]] && TYPE_OPTIONS+=("talk")    && TYPE_LABELS+=("Talk or conference presentation")
 [[ "$ENABLE_MEETINGS" == "true" ]] && TYPE_OPTIONS+=("meeting") && TYPE_LABELS+=("Meeting")
 
 if [[ ${#TYPE_OPTIONS[@]} -eq 0 ]]; then
     echo "ERROR: No content types are enabled in config.txt."
-    echo "Set at least one of enable_sermons, enable_talks, enable_meetings to true."
+    echo "Set at least one of enable_sermons, enable_classes, enable_talks, enable_meetings to true."
     echo ""
     read -rp "Press Enter to close..." _
     exit 1
@@ -123,8 +124,6 @@ else
     fi
     echo "→ Type: $CONTENT_TYPE"
 fi
-
-echo "→ Type: $CONTENT_TYPE"
 echo ""
 
 # ── 2. Input ──────────────────────────────────────────────────────────────────
@@ -300,6 +299,23 @@ if [[ "$CONTENT_TYPE" == "sermon" || "$CONTENT_TYPE" == "talk" ]]; then
     echo "→ Event: $EVENT"
 fi
 
+# ── 5b. Higher Ed class ───────────────────────────────────────────────────────
+# Class documents never name class members; the teacher is named only if given.
+SCRIPTURE=""
+if [[ "$CONTENT_TYPE" == "class" ]]; then
+    echo ""
+    if [[ -n "$DEFAULT_HE_TEACHER" ]]; then
+        read -rp "Teacher, with title [Enter for $DEFAULT_HE_TEACHER]: " SPEAKER
+        SPEAKER="${SPEAKER:-$DEFAULT_HE_TEACHER}"
+    else
+        read -rp "Teacher, with title (e.g. Elder John Smith; blank if unsure): " SPEAKER
+    fi
+    read -rp "Class topic or series (optional): " TALK_TITLE
+    read -rp "Passage studied (optional, e.g. Joshua 1): " SCRIPTURE
+    EVENT="Higher Ed (Adult Sunday School)"
+    echo "→ Event: $EVENT"
+fi
+
 # ── 6. Meeting-specific ───────────────────────────────────────────────────────
 AGENDA=""
 STYLE_FLAG="--style normal"
@@ -352,9 +368,15 @@ if [[ -n "$OUTPUT" ]]; then
 else
     echo "  Output folder: same as input"
 fi
-[[ -n "$SPEAKER"        ]] && echo "  Speaker      : $SPEAKER"
+if [[ "$CONTENT_TYPE" == "class" ]]; then
+    [[ -n "$SPEAKER"    ]] && echo "  Teacher      : $SPEAKER"
+    [[ -n "$TALK_TITLE" ]] && echo "  Topic        : $TALK_TITLE"
+    [[ -n "$SCRIPTURE"  ]] && echo "  Passage      : $SCRIPTURE"
+else
+    [[ -n "$SPEAKER"    ]] && echo "  Speaker      : $SPEAKER"
+    [[ -n "$TALK_TITLE" ]] && echo "  Title        : $TALK_TITLE"
+fi
 [[ -n "$SCHEDULE"       ]] && echo "  Schedule     : $SCHEDULE"
-[[ -n "$TALK_TITLE"     ]] && echo "  Title        : $TALK_TITLE"
 [[ -n "$EVENT"          ]] && echo "  Event        : $EVENT"
 [[ -n "$OVERWRITE_FLAG" ]] && echo "  Overwrite    : yes"
 [[ -n "$AGENDA"         ]] && echo "  Agenda       : $AGENDA"
@@ -379,6 +401,7 @@ CMD=(python3 run_pipeline.py "$INPUT" --type "$CONTENT_TYPE" ${STYLE_FLAG})
 [[ -n "$SCHEDULE"       ]] && CMD+=(--schedule "$SCHEDULE")
 [[ -n "$EVENT"          ]] && CMD+=(--event "$EVENT")
 [[ -n "$TALK_TITLE"     ]] && CMD+=(--title "$TALK_TITLE")
+[[ -n "$SCRIPTURE"      ]] && CMD+=(--scripture "$SCRIPTURE")
 [[ -n "$AGENDA"         ]] && CMD+=(--agenda "$AGENDA")
 
 echo ""
