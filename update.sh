@@ -100,6 +100,12 @@ sync_environment() {
     ln -sf "$ffmpeg" "$CODE_DIR/.venv/bin/ffmpeg"
 
     "$py" "$CODE_DIR/app_home.py" >/dev/null
+
+    # The newest yt-dlp for the YouTube launchers (see youtube_download.py), so
+    # it's ready before it's needed. Not pinned: YouTube changes too often.
+    UV_PYTHON_PREFERENCE=only-managed \
+        "$uv" tool run --quiet --python 3.12 --from 'yt-dlp[default]@latest' --with deno \
+        yt-dlp --version >/dev/null 2>&1 || echo "Note: couldn't fetch yt-dlp (only needed for YouTube)."
 }
 
 download_model() {

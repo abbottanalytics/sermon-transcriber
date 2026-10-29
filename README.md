@@ -378,6 +378,35 @@ date,code,speaker,title,scripture,event
 
 ---
 
+## Sermons from YouTube
+
+The services are livestreamed to YouTube, which makes the livestream the last fallback when a sermon wasn't recorded on the AV Mac.
+
+**`Sermon from YouTube.command`** (for the AV team, see the AV guide's section 5):
+
+- Asks for Morning or Evening Worship and the Sunday, and finds the video by the date in its title (`Morning Worship Service: 25-October-2026; …`) in that service's playlist: New Life's, or `youtube_morning` / `youtube_evening` in config.txt.
+- Downloads the audio, and suggests the sermon's start and end from YouTube's captions (`sermon_trim.py`: free, so the whole service isn't transcribed first). A person accepts or changes the times.
+- Saves the cut as `MMDDYYAM.mp3` / `MMDDYYPM.mp3` in the watch folder's year folder (or Downloads, with no `watch_dir`). From there it's an ordinary recording: documents are made now through Sermon Helper's questions, or at the next automatic check.
+- A special event's session, or any other video, from Terminal:
+  ```bash
+  .venv/bin/python3 youtube_sermon.py --url "<video link>" --name 110726RC2
+  ```
+  The name must be one the automatic job knows (for an event, listed in `special_events.csv`).
+
+**`Download from YouTube.command`** (for the Senior Pastor, or anyone): paste a video, playlist or channel link and choose audio (`.m4a`) or video (`.mp4`, up to 720p). For a playlist: its newest video, or the last 7 or 30 days. Files go in `youtube_dir` (default `~/Downloads/YouTube`); one already there is skipped. From Terminal: `.venv/bin/python3 youtube_download.py get "<link>" [--video] [--newest 1 | --days 7]`.
+
+**Installing just for downloads** (e.g. the Senior Pastor's Mac): the same install, without pre-downloading the Whisper model:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/abbottanalytics/sermon-transcriber/main/install.sh | SKIP_MODEL_DOWNLOAD=1 bash
+```
+
+No API key, schedule or agent is needed for downloading. (The install still includes the transcription packages, about 1 GB, so the same Mac can transcribe later.)
+
+**yt-dlp** isn't pinned with the other packages: YouTube changes often enough that a copy a few weeks old can stop working. Each run uses the newest yt-dlp through `uv tool run` (with Deno, which yt-dlp needs for YouTube, and the bundled ffmpeg); `update.sh` fetches it ahead of time.
+
+---
+
 ## Events list
 
 `events.txt` (in the settings folder) contains the selectable service and event names, organized into two sections:
@@ -456,6 +485,9 @@ SERMON_TRANSCRIPTION_PROCESSING.md  # Week-to-week guide for the AV team
 sermon_helper.py / mac_dialogs.py  # Sermon Helper itself / the native dialog helpers
 drive_publish.py               # Copies finished documents into the Google Drive folder
 special_events.py              # Conference / special event sessions (special_events.csv)
+youtube_download.py            # yt-dlp: find a service in its playlist; Download from YouTube.command
+sermon_trim.py                 # Sermon start/end from YouTube captions; cut the audio to the sermon
+youtube_sermon.py              # Sermon from YouTube.command: service + Sunday → MMDDYYAM.mp3
 ```
 
 The older runner scripts (`run_sermon_summary.py`, `run_meeting_summary.py`,

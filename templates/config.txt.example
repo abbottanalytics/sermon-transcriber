@@ -89,3 +89,12 @@ publish_dir=
 publish_classes=false
 publish_class_transcripts=false
 publish_captions=false
+
+# YOUTUBE (Sermon from YouTube.command and Download from YouTube.command):
+#   youtube_morning   The Morning Worship playlist; blank: New Life's
+#   youtube_evening   The Evening Worship playlist; blank: New Life's
+#   youtube_dir       Where Download from YouTube saves (blank: Downloads/YouTube)
+
+youtube_morning=
+youtube_evening=
+youtube_dir=

@@ -9,6 +9,7 @@ This guide is for the AV team. It covers what happens on its own each Sunday, th
 1. **Save each recording in the Sermons folder with the right name** (below).
 2. **That's it.** The Mac checks for new recordings at **1 pm, 7 pm and 11 pm on Sundays**. It transcribes them, writes the documents, and puts them in the shared Google Drive folder.
 3. **If a notification says "Review in Sermon Helper,"** double-click `Sermon Helper.command` and answer its questions. That usually takes two minutes.
+4. **If a service didn't get recorded,** double-click `Sermon from YouTube.command`. It takes the sermon from the livestream instead ([section 5](#5-if-a-service-wasnt-recorded)).
 
 Nobody has to start anything, and there's nothing to run first.
 
@@ -25,7 +26,7 @@ Name it with the date (**month, day, two-digit year**) and the service code:
 | Morning sermon | `110126AM.mp3` |
 | Evening sermon | `110126PM.mp3` |
 | Higher Ed (adult Sunday School) | `110126HE.mp3` |
-| A conference or special event | see [section 5](#5-conferences-and-other-special-events) |
+| A conference or special event | see [section 6](#6-conferences-and-other-special-events) |
 
 - Upper or lower case both work, and anything after the code is ignored: `110126AM-final.mp3` is fine.
 - `SS` instead of `HE` is accepted too, from when Higher Ed was called Sunday School.
@@ -95,7 +96,22 @@ What you enter is remembered, so if that recording is ever redone, your answers 
 
 ---
 
-## 5. Conferences and other special events
+## 5. If a service wasn't recorded
+
+Every Sunday service is livestreamed to the church's YouTube channel, so a sermon that didn't get recorded here (Audacity wasn't started, or the thumb drive wasn't used) can be taken from the livestream instead.
+
+1. Double-click **`Sermon from YouTube.command`** (in Home → Applications → SermonTranscriber).
+2. Pick **Morning Worship** or **Evening Worship**, and the Sunday (last Sunday is filled in).
+3. It finds that service in the Morning or Evening Worship playlist and downloads the audio: a minute or two.
+4. It shows where the sermon seems to start and end, with the words spoken there, e.g. *"The sermon looks like it runs from 28:54 to 1:07:11 (38 minutes)."* It starts where the preacher announces the Scripture reading and ends after the prayer that follows the sermon (and the Lord's Prayer), the same as a recording made here.
+   - **Use these times** if the words look right.
+   - **Watch on YouTube** opens the video at the start, to check.
+   - **Change times** to type them yourself, as YouTube shows them (e.g. `29:08` and `1:07:11`).
+5. The sermon is saved in the Sermons folder with the usual name, e.g. `102526AM.mp3`. From there it's an ordinary recording. Choose **Make documents now** (Sermon Helper's questions follow, in the same window), or **Leave for the automatic check**.
+
+A livestream can take a while to appear in the playlist after the service. If it isn't there yet, try again later. If YouTube has no captions for it yet, you're asked to type the times.
+
+## 6. Conferences and other special events
 
 Conferences and other events the church hosts work the same way, with one step beforehand.
 
@@ -121,12 +137,12 @@ The code is two letters for the event (RC = Reformation Conference) plus the ses
 - They're processed at the **Sunday 1 pm check**, or right away with **`Check for Recordings.command`**.
 - The documents go in Google Drive under **Special Events**, e.g. `Special Events/2026/2026-11-07 Reformation Conference RC2 - <title> (<speaker>)`.
 - If a session's speaker isn't in the file yet, it's flagged "Review in Sermon Helper" and held back from Drive, like a Sunday sermon.
-- **Not recorded locally?** Dean can download the audio from the YouTube livestream, name it the same way, and put it in the Sermons folder.
+- **Not recorded locally?** Dean can take the session from the YouTube livestream with the same name (README, "Sermons from YouTube").
 - A file name with a code that isn't in `special_events.csv` for that date is skipped as a bad name. That catches typos like `RX1`.
 
 ---
 
-## 6. Keeping the Mac ready
+## 7. Keeping the Mac ready
 
 - **Putting it to sleep is fine.** The Mac wakes itself at 12:55 pm on Sundays, stays awake through the evening checks, and a check missed while it slept runs as soon as it wakes.
 - **Please don't shut it down on Sundays.** If it is shut down, it turns itself on at 12:55 pm Sunday. Any other time, the recordings are processed when someone next turns it on and logs in.
@@ -135,7 +151,7 @@ The code is two letters for the event (RC = Reformation Conference) plus the ses
 
 ---
 
-## 7. Where everything is
+## 8. Where everything is
 
 | What | Where |
 |---|---|
@@ -149,13 +165,15 @@ The app updates itself when a new version is released. There's nothing to downlo
 
 ---
 
-## 8. Common questions
+## 9. Common questions
 
 **The preacher was a guest who isn't in the list.** Choose *Other* in Sermon Helper and type their name with title. If they'll preach again, ask Dean to add their initials to the speaker list, so the schedule lookup recognizes them next time.
 
 **The pulpit sheet had the wrong title.** Correct it in Sermon Helper. If the sheet itself is fixed before the 1 pm check, the right title is used automatically.
 
 **A recording was saved with the wrong date.** Rename the file to the right date. It's processed under the new name at the next check. If documents were already made under the wrong date, ask Dean to remove that folder from Google Drive.
+
+**Sermon from YouTube can't find the service.** The livestream may not be in its playlist yet: try again in an hour. Check the date too: it has to be the Sunday of the service.
 
 **Can I process an old recording?** Yes. Use Sermon Helper → *Choose a different file…*. The automatic checks only pick up recordings dated on or after the day the app was set up.
 
