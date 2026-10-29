@@ -56,3 +56,6 @@ google_service_account*.json
 *service_account*.json
 .env
 *.env
+
+# Editor swap files
+*.swp

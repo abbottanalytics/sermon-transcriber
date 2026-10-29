@@ -2,14 +2,16 @@
 # ---------------------------------------------------------------------------
 # Set up the background agent that processes new recordings automatically.
 #
-#   ./agent.sh install          Start the agent (now, every 30 minutes, at login)
+#   ./agent.sh install          Start the agent (now, at run_times, at login)
 #   ./agent.sh uninstall        Stop and remove it
 #   ./agent.sh status           Is it running, and what did it last do
 #   ./agent.sh run-now          Run a check right now
-#   ./agent.sh power-schedule   Wake / power on the Mac Sunday 8:45 pm (admin)
+#   ./agent.sh power-schedule   Wake / power on the Mac before the first run (admin)
 #
 # Before installing, set watch_dir (and api_key) in config.txt in the
-# settings folder. The agent runs auto_run.sh → auto_transcribe.py.
+# settings folder. The agent runs auto_run.sh → auto_transcribe.py, at the
+# run_times in config.txt (default Sundays 1 pm, 7 pm and 11 pm; see
+# agent_schedule.py). After changing run_times, run ./agent.sh install again.
 #
 # The agent only runs while someone is logged in to this Mac; turn on
 # automatic login if it must survive a restart unattended (see README).
@@ -17,7 +19,6 @@
 set -euo pipefail
 
 LABEL="${SERMON_TRANSCRIBER_AGENT_LABEL:-local.sermon-transcriber}"
-INTERVAL_SECONDS=1800
 # Passed through to the agent when set — for testing with a scratch settings folder
 PASS_THROUGH_VARS=(SERMON_TRANSCRIBER_HOME SERMON_TRANSCRIBER_NO_NOTIFY XDG_CACHE_HOME)
 
@@ -53,15 +54,21 @@ write_plist() {
         [[ -n "${!var:-}" ]] && env_args+=("$var=${!var}")
     done
     mkdir -p "$(dirname "$PLIST")" "$home/logs"
+    local intervals
+    intervals="$(cd "$CODE_DIR" && "$PY" agent_schedule.py launchd)" || exit 1
     "$PY" - "$PLIST" "$LABEL" "$launcher" "$CODE_DIR/auto_run.sh" "$home/logs/agent.log" \
-        "$INTERVAL_SECONDS" ${env_args[@]+"${env_args[@]}"} <<'EOF'
-import plistlib, sys
-plist_path, label, launcher, script, log, interval, *env = sys.argv[1:]
+        "$intervals" ${env_args[@]+"${env_args[@]}"} <<'EOF'
+import json, plistlib, sys
+plist_path, label, launcher, script, log, intervals, *env = sys.argv[1:]
 job = {
     "Label": label,
     "ProgramArguments": [launcher, script],
-    "RunAtLoad": True,                 # at login / restart
-    "StartInterval": int(interval),    # missed intervals while asleep run on wake
+    "RunAtLoad": True,                 # at login / restart: catch up after a shutdown
+    # The run times; one missed while the Mac slept runs as soon as it wakes
+    "StartCalendarInterval": json.loads(intervals),
+    # auto_run.sh leaves a timed caffeinate running to keep the Mac awake until
+    # the next run today; without this launchd would stop it when the job ends
+    "AbandonProcessGroup": True,
     "StandardOutPath": log,
     "StandardErrorPath": log,
 }
@@ -87,7 +94,8 @@ cmd_install() {
 
     launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
     launchctl bootstrap "$DOMAIN" "$PLIST"
-    echo "Agent installed: $LABEL (runs now, every $((INTERVAL_SECONDS / 60)) minutes, and at login)"
+    echo "Agent installed: $LABEL"
+    echo "  Runs now, at login, and at: $(cd "$CODE_DIR" && "$PY" agent_schedule.py show)"
 
     # The first run starts immediately — give it a moment, then check access
     sleep 8
@@ -120,6 +128,7 @@ cmd_status() {
     fi
     # top-level fields only (one tab of indent)
     launchctl print "$DOMAIN/$LABEL" | grep -E $'^\t(state|runs|last exit code) =' | sed $'s/^\t/  /'
+    echo "  runs at: $(cd "$CODE_DIR" && "$PY" agent_schedule.py show), and at login"
     local home
     home="$(settings_home)"
     echo "Recent activity ($home/logs/auto.log):"
@@ -132,15 +141,19 @@ cmd_run_now() {
 }
 
 cmd_power_schedule() {
+    local wake day time
+    wake="$(cd "$CODE_DIR" && "$PY" agent_schedule.py wake-time)" || exit 1
+    read -r day time <<< "$wake"
     echo "Current power schedule:"
     pmset -g sched | sed 's/^/  /'
     echo ""
-    echo "This sets the Mac to wake (or power on, if it was shut down) every Sunday at"
-    echo "8:45 pm, so the evening recordings are processed even if someone turned it off."
-    echo "It REPLACES any repeating schedule shown above. Needs an admin password."
+    echo "This sets the Mac to wake (or power on, if it was shut down) at $time every"
+    echo "week (pmset day '$day'), just before the first run. Each run then keeps it"
+    echo "awake until the next run that day. It REPLACES any repeating schedule shown"
+    echo "above. Needs an admin password."
     read -rp "Continue? [y/N] " answer
     [[ "$answer" == [yY]* ]] || { echo "No change."; return 0; }
-    sudo pmset repeat wakeorpoweron U 20:45:00
+    sudo pmset repeat wakeorpoweron "$day" "$time"
     pmset -g sched | sed 's/^/  /'
 }
 

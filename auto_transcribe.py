@@ -2,7 +2,7 @@
 """
 Automatic job: process new church recordings in the watch folder.
 
-Run by the launchd agent (see agent.sh) every 30 minutes and at login, or by
+Run by the launchd agent (see agent.sh) at run_times (Sundays 1, 7 and 11 pm) and at login, or by
 hand. Each run:
 
   1. Scans watch_dir (and its year subfolders) for recordings named

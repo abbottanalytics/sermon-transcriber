@@ -167,7 +167,9 @@ python3 run_pipeline.py sermon.mp3 --type sermon --skip-whisper
 
 ### Option 4: Automatic (church AV computer)
 
-A background agent checks the recordings folder every 30 minutes, at login, and after the Mac wakes. It processes anything new on its own: no one has to start it.
+A background agent checks the recordings folder on **Sundays at 1 pm, 7 pm and 11 pm**, after the morning service, Higher Ed and the evening service. It processes anything new on its own: no one has to start it. To check right away, for example after a special event on another day, double-click **`Check for Recordings.command`**.
+
+> **For the AV team:** [SERMON_TRANSCRIPTION_PROCESSING.md](SERMON_TRANSCRIPTION_PROCESSING.md) explains what happens each Sunday, how to name recordings, and what to do with each notification. This section covers setting it up.
 
 **What it picks up:** files named `MMDDYY` + a service code, upper or lower case, with anything after the code ignored:
 
@@ -194,7 +196,9 @@ A background agent checks the recordings folder every 30 minutes, at login, and 
 
 **Keeping it running unattended:**
 - **Automatic login** (System Settings → Users & Groups) for the AV account. The agent only runs while someone is logged in, so after a restart it waits at the login screen without this. macOS doesn't allow automatic login while FileVault is on.
-- **`./agent.sh power-schedule`** (needs an admin password) wakes the Mac every Sunday at 8:45 pm, or powers it on if someone shut it down.
+- **`./agent.sh power-schedule`** (needs an admin password) wakes the Mac every Sunday at 12:55 pm, or powers it on if someone shut it down. macOS allows only one repeating wake time, so each Sunday check keeps the Mac awake until the next one; choosing Sleep or shutting down still works.
+- **Check times** are the `run_times` setting in `config.txt` (default `Sun 13:00, Sun 19:00, Sun 23:00`). After changing it, run `./agent.sh install` and `./agent.sh power-schedule` again.
+- **Missed checks catch up.** A check missed while the Mac slept runs as soon as it wakes, and the agent also checks when someone logs in, so a Mac that was off on Sunday catches up when it's next turned on.
 - **Shutdowns mid-run are safe.** A recording counts as done only when every output is written. If the transcript already exists, a re-run skips straight to the summaries.
 
 **When something needs a person, use Sermon Helper.** The agent's notification says when a sermon needs review, for example "preacher initials 'SE' aren't in speaker_initials.csv". To fix it, double-click **`Sermon Helper.command`** in the install folder. Plain Mac dialogs walk you through it:
@@ -210,7 +214,7 @@ What you confirm is saved, and it's used again if the agent ever redoes that rec
 **Day to day:**
 ```bash
 ./agent.sh status      # running? last result, recent activity
-./agent.sh run-now     # check right now
+./agent.sh run-now     # check right now (same as Check for Recordings.command)
 ./agent.sh uninstall   # stop it (settings and outputs are kept)
 ```
 - What happened to each recording is in `processed.json` in the settings folder. `logs/auto.log` has a summary; `logs/agent.log` has full output.
@@ -422,6 +426,9 @@ auto_run.sh                    # What the agent runs: daily update, then auto_tr
 agent.sh                       # Install / remove / check the launchd agent
 agent_launcher.c               # Small program the agent runs (holds the Full Disk Access permission)
 Sermon Helper.command          # Double-click: fix or finish one recording in Mac dialogs
+Check for Recordings.command   # Double-click: run a check now instead of waiting for the next one
+agent_schedule.py              # run_times → the agent's schedule and Sunday stay-awake timer
+SERMON_TRANSCRIPTION_PROCESSING.md  # Week-to-week guide for the AV team
 sermon_helper.py / mac_dialogs.py  # Sermon Helper itself / the native dialog helpers
 drive_publish.py               # Copies finished documents into the Google Drive folder
 ```

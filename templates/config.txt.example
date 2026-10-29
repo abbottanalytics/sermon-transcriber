@@ -54,6 +54,10 @@ schedule_file=
 #   process_from    YYYY-MM-DD. Recordings dated earlier are ignored. Left blank,
 #                   it is set to the day of the first automatic run, so the
 #                   back catalog is not processed.
+#   run_times       When the agent checks for new recordings: day + 24-hour
+#                   time, comma-separated. It also checks at login, and a time
+#                   missed while the Mac slept runs when it wakes. After
+#                   changing this, run ./agent.sh install again.
 #   settle_minutes  A recording must be unchanged this long before it is
 #                   processed, so a file still being copied is left alone.
 #   whisper_model   turbo (best), or small / base for faster runs on older Macs.
@@ -63,6 +67,7 @@ schedule_file=
 
 watch_dir=
 process_from=
+run_times=Sun 13:00, Sun 19:00, Sun 23:00
 settle_minutes=10
 whisper_model=turbo
 higher_ed_teacher=
