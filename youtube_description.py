@@ -95,6 +95,40 @@ def speech_segments(segments: list[dict]) -> list[dict]:
     return kept
 
 
+def sentences(segments: list[dict], pause: float = 0.8, longest: float = 15) -> list[dict]:
+    """Whisper sometimes writes a word or two per segment, unpunctuated. Join
+    segments into sentence-sized lines (ending at . ? !, a pause, or `longest`
+    seconds), so a chapter starts where a sentence does."""
+    lines = []
+    for seg in segments:
+        last = lines[-1] if lines else None
+        if (last and not re.search(r"[.?!][\"')\]]*$", last["text"])
+                and seg["start"] - last["end"] < pause
+                and seg["end"] - last["start"] <= longest):
+            last["text"] += " " + seg["text"]
+            last["end"] = seg["end"]
+        else:
+            lines.append(dict(seg))
+    return lines
+
+
+def talk_end(segments: list[dict], gap: float = 10, stray_words: int = 8,
+             words_per_second: float = 1.0) -> float | None:
+    """When the talk ends: the last segment's end, leaving out what follows a
+    long silence if it's a few words or far slower than speech (2-3 words a
+    second): Whisper's guesses at closing music."""
+    if not segments:
+        return None
+    for i in range(len(segments) - 1, 0, -1):
+        if segments[i]["start"] - segments[i - 1]["end"] >= gap:
+            words = sum(len(s["text"].split()) for s in segments[i:])
+            seconds = max(segments[-1]["end"] - segments[i]["start"], 1)
+            if words <= stray_words or words / seconds < words_per_second:
+                return segments[i - 1]["end"]
+            break
+    return segments[-1]["end"]
+
+
 # ── Chapters ─────────────────────────────────────────────────────────────────
 
 def format_time(seconds: float) -> str:
@@ -322,15 +356,15 @@ def _write_youtube_description(client, base, srt_path, outline_md, summary_md, o
     elif not points:
         print("  YouTube: the outline has no Roman-numeral points, so no chapters")
     else:
-        segments = speech_segments(parse_srt(srt_path.read_text(encoding="utf-8")))
+        segments = sentences(speech_segments(parse_srt(srt_path.read_text(encoding="utf-8"))))
         for seg in segments:
             seg["start"] += timestamp_offset
             seg["end"] += timestamp_offset
-        talk_end = segments[-1]["end"] if segments else None
-        duration = duration or talk_end
+        end_of_talk = talk_end(segments)
+        duration = duration or end_of_talk
         try:
             chapters = build_chapters(locate_points(client, segments, points),
-                                      intro_length, duration, talk_end)
+                                      intro_length, duration, end_of_talk)
             check_chapters(chapters, duration)
         except (ChapterError, ValueError, AttributeError, KeyError, TypeError) as e:
             print(f"  WARNING: YouTube chapters left out — {e}", file=sys.stderr)

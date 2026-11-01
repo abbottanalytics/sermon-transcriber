@@ -38,10 +38,14 @@ Second, holiness and glory.
 Second, holiness and glory.
 
 7
-00:35:00,000 --> 00:35:30,000
-Finally, the fire of glory in the church.
+00:35:00,000 --> 00:35:06,000
+Finally, the fire of glory in the church, and how it burns among us today.
 
 8
+00:35:06,000 --> 00:35:30,000
+It is the fire that refines us, that warms us, and that sends us out to our neighbors with good news for them and for all of us.
+
+9
 00:40:00,000 --> 00:40:05,000
 Thank you very much!
 """
@@ -68,7 +72,7 @@ class Times(unittest.TestCase):
 
     def test_parse_srt(self):
         segs = yd.parse_srt(SRT)
-        self.assertEqual(len(segs), 8)
+        self.assertEqual(len(segs), 9)
         self.assertEqual(segs[3], {"start": 300.0, "end": 310.0,
                                    "text": "So first, what is holiness?"})
 
@@ -77,7 +81,41 @@ class Times(unittest.TestCase):
         self.assertEqual(texts, ["Good evening, it's a joy to be here.",
                                  "So first, what is holiness?",
                                  "Second, holiness and glory.",
-                                 "Finally, the fire of glory in the church."])
+                                 "Finally, the fire of glory in the church, and how it burns "
+                                 "among us today.",
+                                 "It is the fire that refines us, that warms us, and that sends "
+                                 "us out to our neighbors with good news for them and for all of us."])
+
+    def test_sentences_join_fragments(self):
+        frags = [{"start": 0.0, "end": 0.5, "text": "in the end"},
+                 {"start": 0.5, "end": 1.0, "text": "only the holy one"},
+                 {"start": 1.1, "end": 2.0, "text": "can condemn."},
+                 {"start": 2.1, "end": 3.0, "text": "Next sentence"},
+                 {"start": 5.0, "end": 6.0, "text": "after a pause"}]
+        self.assertEqual(yd.sentences(frags), [
+            {"start": 0.0, "end": 2.0, "text": "in the end only the holy one can condemn."},
+            {"start": 2.1, "end": 3.0, "text": "Next sentence"},
+            {"start": 5.0, "end": 6.0, "text": "after a pause"}])
+
+    def test_sentences_stop_at_longest(self):
+        frags = [{"start": float(i), "end": i + 1.0, "text": "word"} for i in range(40)]
+        self.assertTrue(all(s["end"] - s["start"] <= 15 for s in yd.sentences(frags)))
+
+    def test_talk_end_ignores_stray_words_after_silence(self):
+        talk = [{"start": 0.0, "end": 3754.1, "text": "has found us. Thank you"},
+                {"start": 3768.6, "end": 3769.0, "text": "that"},
+                {"start": 3770.3, "end": 3771.0, "text": "love him"},
+                {"start": 3773.7, "end": 3788.6, "text": "he he"}]
+        self.assertEqual(yd.talk_end(talk), 3754.1)
+        self.assertEqual(yd.talk_end(talk[:1]), 3754.1)
+        slow = talk[:1] + [{"start": 3768.0 + 3 * i, "end": 3769.0 + 3 * i, "text": "he he"}
+                           for i in range(10)]          # 20 "words" in 31 s
+        self.assertEqual(yd.talk_end(slow), 3754.1)
+
+    def test_talk_end_keeps_real_speech_after_a_pause(self):
+        talk = [{"start": 0.0, "end": 100.0, "text": "a"},
+                {"start": 120.0, "end": 160.0, "text": "a long closing prayer " * 25}]   # 2.5 words/s
+        self.assertEqual(yd.talk_end(talk), 160.0)
 
 
 class Rules(unittest.TestCase):
