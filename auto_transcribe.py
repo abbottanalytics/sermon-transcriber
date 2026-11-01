@@ -330,7 +330,8 @@ def process_recording(audio: Path, client, output_root: Path, schedules: Schedul
                  skip_whisper=have_transcript, style="normal", agenda_md=None,
                  output_dir=out_dir, speaker=details["speaker"], event=rec.event,
                  title=details["title"], scripture=details["text"],
-                 whisper_model=whisper_model)
+                 whisper_model=whisper_model,
+                 youtube=rec.special.get("youtube") if rec.special else None)
     return "done", review, details
 
 

@@ -31,6 +31,8 @@ Options:
   --style       Minutes verbosity: minimal, normal, verbose (meeting only, default: normal)
   --overwrite   Re-process files even if outputs already exist
   --skip-whisper  Skip Whisper; treat audio file as already transcribed
+  --conference, --session, --notes, --timestamp-offset, --intro-length
+                YouTube description fields (sermon and talk); see youtube_description.py
 
 REQUIREMENTS
 ------------
@@ -118,7 +120,8 @@ def collect_inputs(paths: list[str], content_type: str) -> list[Path]:
                         found.append(f)
                 elif name.endswith(".txt"):
                     # Skip our own generated outputs
-                    if any(name.endswith(s) for s in [".scripture.txt", ".motions_and_actions.txt"]):
+                    if any(name.endswith(s) for s in [".scripture.txt", ".motions_and_actions.txt",
+                                                  ".podcast.txt", ".youtube.txt"]):
                         continue
                     # Skip if an audio/video file with the same stem exists (handled via that file)
                     has_audio = any(
@@ -139,7 +142,10 @@ def process_file(client, input_path: Path, content_type: str, overwrite: bool,
                  event: str | None, title: str | None,
                  schedule: dict | None = None,
                  whisper_model: str = DEFAULT_WHISPER_MODEL,
-                 scripture: str | None = None):
+                 scripture: str | None = None,
+                 youtube: dict | None = None):
+    """youtube: extra fields for <name>.youtube.txt (sermon and talk): conference,
+    session, notes, timestamp_offset, intro_length — see youtube_description.py."""
     # Determine where outputs will land so we can check before running Whisper
     stem = input_path.stem
 
@@ -172,15 +178,21 @@ def process_file(client, input_path: Path, content_type: str, overwrite: bool,
 
     out_base = effective_out_dir / txt_path.stem
 
+    youtube = dict(youtube or {})
+    if input_path.suffix.lower() in VIDEO_EXTENSIONS and "duration" not in youtube:
+        from youtube_description import media_duration
+        youtube["duration"] = media_duration(input_path)
+
     if content_type == "sermon":
         from sermon_summary import process_sermon
         process_sermon(client, txt_path, overwrite, out_base=out_base,
-                       speaker=speaker, event=event, title=title, scripture=scripture)
+                       speaker=speaker, event=event, title=title, scripture=scripture,
+                       youtube=youtube)
 
     elif content_type == "talk":
         from talk_summary import process_talk
         process_talk(client, txt_path, overwrite, out_base=out_base,
-                     speaker=speaker, event=event, title=title)
+                     speaker=speaker, event=event, title=title, youtube=youtube)
 
     elif content_type == "class":
         from class_summary import process_class
@@ -211,6 +223,17 @@ def main():
     ap.add_argument("--event", help="Service or event name (e.g. 'Morning Worship')")
     ap.add_argument("--title", help="Talk or sermon title, or a class's topic")
     ap.add_argument("--scripture", help="Scripture passage (sermon or class), e.g. 'Joshua 1'")
+    yt = ap.add_argument_group("YouTube description (sermon and talk: <name>.youtube.txt)")
+    yt.add_argument("--conference", help="Conference title, e.g. 'Reforming Holiness: The Fire of Glory'")
+    yt.add_argument("--session", help="Session label shown before the title, e.g. 'Session One'")
+    yt.add_argument("--notes", help="Extra text at the end of the description (e.g. an audio note)")
+    yt.add_argument("--notes-file", help="Read --notes from this file")
+    yt.add_argument("--timestamp-offset", type=float, default=0, metavar="SECONDS",
+                    help="Add this to every Whisper time: the transcript is of the talk alone, "
+                         "but the video starts with an intro this long")
+    yt.add_argument("--intro-length", type=float, metavar="SECONDS",
+                    help="Where the talk starts in the video (default: --timestamp-offset); "
+                         "0:00 to here is a Welcome chapter")
     ap.add_argument("--overwrite", action="store_true", help="Overwrite existing output files")
     ap.add_argument("--skip-whisper", action="store_true",
                     help="Skip Whisper even for audio files (assumes .txt already exists)")
@@ -254,6 +277,12 @@ def main():
         print("No input files found.", file=sys.stderr)
         sys.exit(1)
 
+    notes = args.notes
+    if args.notes_file:
+        notes = Path(args.notes_file).expanduser().read_text(encoding="utf-8")
+    youtube = {"conference": args.conference, "session": args.session, "notes": notes,
+               "timestamp_offset": args.timestamp_offset, "intro_length": args.intro_length}
+
     output_dir = Path(args.output_dir).expanduser().resolve() if args.output_dir else None
 
     for input_path in inputs:
@@ -271,6 +300,7 @@ def main():
             title=args.title or None,
             schedule=schedule,
             scripture=args.scripture or None,
+            youtube=youtube,
         )
 
     print("\nDONE.")

@@ -14,6 +14,10 @@
 #   - speaker: full name with title, as it should appear in the documents
 #   - title and scripture: optional; leave blank if not known yet
 #   - event: the name shown in the documents, e.g. Reformation Conference
+#   - Optional extra columns for the YouTube description (<name>.youtube.txt):
+#     conference (the conference's title), session (e.g. Session One) and
+#     notes (a line at the end, e.g. about audio problems). Add them to the
+#     header line to use them: date,code,speaker,title,scripture,event,conference,session,notes
 #   - Put quotes around a value that contains a comma.
 #   - Lines starting with # are comments and are ignored.
 #

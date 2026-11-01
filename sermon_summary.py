@@ -3,6 +3,7 @@ from transcription_summary_core import (
     call_llm, read_text, write_docx, write_text,
     clean_transcript, estimate_tokens, build_metadata_header,
 )
+from youtube_description import write_youtube_description
 
 
 def create_outline(client, cleaned_md: str) -> str:
@@ -74,7 +75,7 @@ def create_podcast_description(client, cleaned_md: str,
 
 def process_sermon(client, txt_path: Path, overwrite: bool,
                    out_base: Path = None, speaker: str = None, event: str = None,
-                   title: str = None, scripture: str = None):
+                   title: str = None, scripture: str = None, youtube: dict = None):
     base = out_base if out_base else txt_path.with_suffix("")
     meta = build_metadata_header({"Speaker": speaker, "Title": title,
                                   "Scripture": scripture, "Event": event})
@@ -99,3 +100,8 @@ def process_sermon(client, txt_path: Path, overwrite: bool,
     print("  Writing podcast description...")
     podcast = create_podcast_description(client, cleaned, speaker, event, scripture)
     write_text(base.with_suffix(".podcast.txt"), podcast, overwrite)
+
+    print("  Writing YouTube description...")
+    write_youtube_description(client, base, txt_path.with_suffix(".srt"), outline, summary,
+                              overwrite, kind="sermon", speaker=speaker, event=event,
+                              title=title, **(youtube or {}))

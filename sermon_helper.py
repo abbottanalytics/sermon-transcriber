@@ -299,7 +299,8 @@ class Helper:
                          skip_whisper=have_transcript, style="normal", agenda_md=None,
                          output_dir=out_dir, speaker=speaker, event=event,
                          title=title or None, scripture=scripture or None,
-                         whisper_model=self.whisper_model)
+                         whisper_model=self.whisper_model,
+                         youtube=rec.special.get("youtube") if rec and rec.special else None)
         except Exception as e:
             log.exception("Sermon Helper: failed for %s", audio.name)
             dlg.info(f"Making the documents for {audio.name} failed:\n\n{e}")

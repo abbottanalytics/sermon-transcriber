@@ -7,9 +7,9 @@ Supports four content types — each produces a different set of outputs:
 
 | Type | Outputs |
 |------|---------|
-| `sermon` | Cleaned transcript, outline, summary, scripture inference |
+| `sermon` | Cleaned transcript, outline, summary, scripture inference, podcast and YouTube descriptions |
 | `meeting` | Cleaned transcript, minutes, summary, action items, motions |
-| `talk` | Cleaned transcript, outline, summary |
+| `talk` | Cleaned transcript, outline, summary, podcast and YouTube descriptions |
 | `class` | Higher Ed (adult Sunday School): cleaned transcript, class summary, lesson outline, discussion guide, podcast description |
 
 ---
@@ -374,6 +374,7 @@ date,code,speaker,title,scripture,event
 - **Unlisted codes:** a code is recognized only on the dates it's listed, so a typo is still skipped as a bad name. Add the rows before the event's recordings are processed.
 - **Blank fields:** a blank speaker flags the recording for review in Sermon Helper and holds it back from Drive. A blank title or passage is just left out.
 - **Drive:** published sessions go under `Special Events/<year>/` in the Drive folder.
+- **YouTube description:** optional extra columns `conference`, `session` and `notes` (add them to the header line) fill in the conference title, a label like `Session One`, and a closing note in the session's `.youtube.txt`.
 - **Checking the file:** `.venv/bin/python3 special_events.py` lists the sessions as the pipeline reads them, or names the line with a mistake. While the file has a mistake, special events are off and the agent sends a notification.
 
 ---
@@ -418,6 +419,47 @@ To add a new recurring event, open `events.txt` in any text editor and add a lin
 
 ---
 
+## YouTube description
+
+Sermons and talks also get `<name>.youtube.txt`, ready to paste into a YouTube video's description:
+
+```
+RefCon 2026
+Host: New Life Presbyterian Church of La Mesa — https://www.newlifelamesa.org
+Reforming Holiness: The Fire of Glory
+Dr. Derek Rishmawy
+Session One: Reforming Our View of Spirituality
+
+<one-sentence summary>
+
+Chapters
+0:00 Welcome
+0:23 <first main point>
+12:41 <second main point>
+
+<notes, if any>
+```
+
+The lines are `--event`, the host, `--conference`, `--speaker`, `--session`: `--title`; any that aren't given are left out. Each main outline point (I, II, III…) starts at the Whisper segment where the speaker begins it, so chapters need the `.srt` Whisper writes (an outline with more than 12 main points is grouped into at most 12 chapters, each starting at its first point); Whisper's "Thank you." in silence and applause is ignored. YouTube makes chapters only when the first is `0:00`, there are at least 3, they go up and each lasts 10 s or more: points closer together than that are merged, and if the rules still aren't met the description is written without chapters and a warning is printed.
+
+When the video has an intro (title slides) before the talk:
+
+```bash
+# Transcribing the finished video: the talk starts 23 s in
+python3 run_pipeline.py "RefCon 2026 - Session 1.mp4" --type talk --intro-length 23 \
+    --event "RefCon 2026" --conference "Reforming Holiness: The Fire of Glory" \
+    --speaker "Dr. Derek Rishmawy" --session "Session One" \
+    --title "Reforming Our View of Spirituality" --notes-file audio_note.txt
+
+# Transcript of the talk alone, video with a 23 s intro: shift every time by 23 s
+python3 run_pipeline.py lecture1.mp3 --type talk --timestamp-offset 23 ...
+```
+
+`0:00 Welcome` covers the intro and the first point starts at the talk. `--notes` (or `--notes-file`) adds a closing paragraph, e.g. an apology for audio problems.
+
+---
+
+
 ## Output files
 
 Outputs are written next to the input transcript (or to `--output-dir` if specified). For a file named `081912AM-Genesis.txt`:
@@ -428,6 +470,7 @@ Outputs are written next to the input transcript (or to `--output-dir` if specif
 - `081912AM-Genesis.summary.docx` — 1–2 page summary
 - `081912AM-Genesis.scripture.docx` — inferred Scripture passage(s) with confidence
 - `081912AM-Genesis.podcast.txt` — 2–3 sentence podcast episode description
+- `081912AM-Genesis.youtube.txt` — YouTube description with chapters (see [YouTube description](#youtube-description))
 
 All sermon documents include a **Speaker** and **Event** header at the top when those values are provided.
 
@@ -444,6 +487,7 @@ All sermon documents include a **Speaker** and **Event** header at the top when 
 - `talk.outline.docx` — structured outline
 - `talk.summary.docx` — summary with key arguments and takeaways
 - `talk.podcast.txt` — 2–3 sentence podcast episode description
+- `talk.youtube.txt` — YouTube description with chapters (see [YouTube description](#youtube-description))
 
 All talk documents include a **Speaker**, **Title**, and **Event** header when provided.
 
@@ -485,6 +529,8 @@ SERMON_TRANSCRIPTION_PROCESSING.md  # Week-to-week guide for the AV team
 sermon_helper.py / mac_dialogs.py  # Sermon Helper itself / the native dialog helpers
 drive_publish.py               # Copies finished documents into the Google Drive folder
 special_events.py              # Conference / special event sessions (special_events.csv)
+youtube_description.py         # <name>.youtube.txt: description + chapters from the outline and .srt
+test_youtube_description.py    # python3 -m unittest test_youtube_description
 youtube_download.py            # yt-dlp: find a service in its playlist; Download from YouTube.command
 sermon_trim.py                 # Sermon start/end from YouTube captions; cut the audio to the sermon
 youtube_sermon.py              # Sermon from YouTube.command: service + Sunday → MMDDYYAM.mp3

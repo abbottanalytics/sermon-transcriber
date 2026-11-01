@@ -13,6 +13,10 @@ is processed like a sermon, with the speaker, title and passage from its row.
 A code is only recognized for the dates it's listed under, so a typo in a
 file name is still reported rather than processed with no details.
 
+Optional columns conference, session and notes go into the YouTube
+description (<name>.youtube.txt): the conference's title, a session label such
+as "Session One", and a note at the end.
+
 Codes are two letters plus an optional session number (RC, RC1, RC2...).
 AM, PM, HE and SS are the Sunday codes and can't be used here.
 
@@ -46,7 +50,8 @@ def _parse_date(value: str) -> date:
 
 
 def parse(text: str) -> dict[tuple[date, str], dict]:
-    """special_events.csv text → {(date, CODE): {speaker, title, text, event}}."""
+    """special_events.csv text → {(date, CODE): {speaker, title, text, event,
+    youtube: {conference, session, notes}}}."""
     numbered = [(n, line) for n, line in enumerate(text.splitlines(), start=1)
                 if line.strip() and not line.lstrip().startswith("#")]
     line_numbers = [n for n, _ in numbered[1:]]       # the first is the header
@@ -68,7 +73,9 @@ def parse(text: str) -> dict[tuple[date, str], dict]:
         events[(when, code)] = {"speaker": row.get("speaker") or None,
                                 "title": row.get("title") or None,
                                 "text": row.get("scripture") or None,
-                                "event": row["event"]}
+                                "event": row["event"],
+                                "youtube": {k: row.get(k) or None
+                                            for k in ("conference", "session", "notes")}}
     return events
 
 
