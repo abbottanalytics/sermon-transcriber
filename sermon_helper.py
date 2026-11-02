@@ -154,7 +154,6 @@ class Helper:
         self.schedules = ScheduleSource(self.config)
         self.output_root = Path(self.config.get("output_dir") or self.home / "output").expanduser()
         self.whisper_model = self.config.get("whisper_model") or DEFAULT_WHISPER_MODEL
-        self.keep_json = keep_whisper_json(self.config)
         watch = self.config.get("watch_dir") or self.config.get("input_dir") or ""
         self.watch_dir = Path(watch).expanduser() if watch else None
         self._client = None
@@ -235,7 +234,7 @@ class Helper:
                          output_dir=out_dir, speaker=teacher or None,
                          event=HIGHER_ED_EVENT, title=title or None,
                          scripture=scripture or None, whisper_model=self.whisper_model,
-                         keep_json=self.keep_json)
+                         keep_json=keep_whisper_json(self.config, "class"))
         except Exception as e:
             log.exception("Sermon Helper: failed for %s", audio.name)
             dlg.info(f"Making the class documents for {audio.name} failed:\n\n{e}")
@@ -301,7 +300,8 @@ class Helper:
                          skip_whisper=have_transcript, style="normal", agenda_md=None,
                          output_dir=out_dir, speaker=speaker, event=event,
                          title=title or None, scripture=scripture or None,
-                         whisper_model=self.whisper_model, keep_json=self.keep_json,
+                         whisper_model=self.whisper_model,
+                         keep_json=keep_whisper_json(self.config, "sermon"),
                          youtube=rec.special.get("youtube") if rec and rec.special else None)
         except Exception as e:
             log.exception("Sermon Helper: failed for %s", audio.name)

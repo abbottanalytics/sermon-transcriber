@@ -61,15 +61,24 @@ DEFAULT_WHISPER_MODEL = "turbo"
 # Whisper can write one format or all of them. Of its timestamped formats only
 # .srt is kept (YouTube chapters, captions, sermon analysis read it); the
 # others just clutter the folder. .txt is the transcript everything else uses.
-# .json is kept on request (--keep-json, keep_whisper_json=true): it has each
-# word's time, for cutting clips on a word, plus per-segment confidence, and
-# every other format can be rebuilt from it without re-running Whisper.
+# .json is also kept for the types that get cut into clips (sermons and talks,
+# unless keep_whisper_json or --keep-json says otherwise): it has each word's
+# time, for cutting on a word, plus per-segment confidence, and every other
+# format can be rebuilt from it without re-running Whisper.
 WHISPER_DISCARD = (".json", ".tsv", ".vtt")
+JSON_TYPES = ("sermon", "talk")
 
 
-def keep_whisper_json(config: dict) -> bool:
-    """config.txt's keep_whisper_json setting."""
-    return str(config.get("keep_whisper_json") or "").strip().lower() in ("true", "yes", "1")
+def keep_whisper_json(config: dict, content_type: str) -> bool:
+    """config.txt's keep_whisper_json for this content type: a list of types
+    ('sermon, talk'), true or false for all of them; unset means sermon, talk."""
+    value = str(config.get("keep_whisper_json") or "").strip().lower()
+    if value in ("true", "yes", "1", "all"):
+        return True
+    if value in ("false", "no", "0", "none"):
+        return False
+    types = [t.strip() for t in value.split(",") if t.strip()] or JSON_TYPES
+    return content_type in types
 
 
 def prune_whisper_outputs(output_dir: Path, stem: str, keep_json: bool = False):
@@ -171,11 +180,14 @@ def process_file(client, input_path: Path, content_type: str, overwrite: bool,
                  scripture: str | None = None,
                  youtube: dict | None = None,
                  pronouns: str | None = None,
-                 keep_json: bool = False):
-    """youtube: extra fields for <name>.youtube.txt (sermon and talk): conference,
+                 keep_json: bool | None = None):
+    """keep_json: also keep Whisper's .json with word times (default: for
+    sermons and talks). youtube: extra fields for <name>.youtube.txt (sermon and talk): conference,
     session, notes, timestamp_offset, intro_length — see youtube_description.py."""
     # Determine where outputs will land so we can check before running Whisper
     stem = input_path.stem
+    if keep_json is None:
+        keep_json = content_type in JSON_TYPES
 
     # Auto-fill speaker from schedule if not provided on the command line
     if not speaker and schedule:
@@ -268,9 +280,9 @@ def main():
                     help="Where the talk starts in the video (default: --timestamp-offset); "
                          "0:00 to here is a Welcome chapter")
     ap.add_argument("--overwrite", action="store_true", help="Overwrite existing output files")
-    ap.add_argument("--keep-json", action="store_true",
-                    help="Also keep Whisper's .json, with each word's time (for cutting clips); "
-                         "normally only .txt and .srt are kept")
+    ap.add_argument("--keep-json", action=argparse.BooleanOptionalAction, default=None,
+                    help="Also keep Whisper's .json, with each word's time (for cutting clips). "
+                         "Default: yes for sermons and talks, no for classes and meetings")
     ap.add_argument("--skip-whisper", action="store_true",
                     help="Skip Whisper even for audio files (assumes .txt already exists)")
     args = ap.parse_args()

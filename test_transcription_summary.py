@@ -95,9 +95,29 @@ class WhisperOutputTests(unittest.TestCase):
         self.assertNotIn("--word_timestamps", run.call_args.args[0])
 
     def test_config_setting(self):
-        self.assertTrue(run_pipeline.keep_whisper_json({"keep_whisper_json": "true"}))
-        self.assertFalse(run_pipeline.keep_whisper_json({"keep_whisper_json": "false"}))
-        self.assertFalse(run_pipeline.keep_whisper_json({}))
+        keep = run_pipeline.keep_whisper_json
+        # Unset: the types that get cut into reels
+        self.assertTrue(keep({}, "sermon"))
+        self.assertTrue(keep({}, "talk"))
+        self.assertFalse(keep({}, "class"))
+        self.assertFalse(keep({"keep_whisper_json": ""}, "meeting"))
+        self.assertTrue(keep({"keep_whisper_json": "sermon, class"}, "class"))
+        self.assertFalse(keep({"keep_whisper_json": "sermon, class"}, "talk"))
+        self.assertTrue(keep({"keep_whisper_json": "true"}, "meeting"))
+        self.assertFalse(keep({"keep_whisper_json": "false"}, "sermon"))
+
+    def test_process_file_default_by_type(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            for kind, expected in (("talk", True), ("class", False)):
+                audio = d / f"{kind}.m4a"
+                audio.write_text("x")
+                with mock.patch.object(run_pipeline, "resolve_transcript",
+                                       side_effect=RuntimeError("stop")) as rt:
+                    with self.assertRaises(RuntimeError):
+                        run_pipeline.process_file(None, audio, kind, True, False, "normal",
+                                                  None, None, None, None, None)
+                self.assertEqual(rt.call_args.args[4], expected, kind)
 
 
 class ProcessTests(unittest.TestCase):

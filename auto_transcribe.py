@@ -29,7 +29,8 @@ Settings (config.txt in the settings folder):
                      isn't processed.
     settle_minutes   Minutes a file must be unchanged before it's processed (10)
     whisper_model    Whisper model (turbo)
-    keep_whisper_json  true to keep Whisper's .json with word times (default false)
+    keep_whisper_json  Types whose Whisper .json (word times) is kept: e.g.
+                     sermon, talk (the default), or true / false for all
     higher_ed_teacher  Teacher named in Higher Ed class documents (optional)
     schedule_sheet   Preaching schedule Google Sheet URL (see google_sheet.py), or
     schedule_file    a preaching schedule CSV instead (optional)
@@ -310,8 +311,8 @@ def output_dir_for(audio: Path, output_root: Path) -> Path:
 
 
 def process_recording(audio: Path, client, output_root: Path, schedules: ScheduleSource,
-                      whisper_model: str, confirmed: dict | None = None,
-                      keep_json: bool = False) -> tuple[str, list[str], dict]:
+                      whisper_model: str, confirmed: dict | None = None
+                      ) -> tuple[str, list[str], dict]:
     """Returns (status, needs_review notes, schedule details used).
 
     confirmed: speaker/title/text a person set in Sermon Helper for this
@@ -338,7 +339,8 @@ def process_recording(audio: Path, client, output_root: Path, schedules: Schedul
                  skip_whisper=have_transcript, style="normal", agenda_md=None,
                  output_dir=out_dir, speaker=details["speaker"], event=rec.event,
                  title=details["title"], scripture=details["text"],
-                 whisper_model=whisper_model, keep_json=keep_json,
+                 whisper_model=whisper_model,
+                 keep_json=keep_whisper_json(schedules.config, rec.kind),
                  youtube=rec.special.get("youtube") if rec.special else None)
     return "done", review, details
 
@@ -474,7 +476,7 @@ def run(dry_run: bool) -> int:
         try:
             status, review, details = process_recording(
                 audio, client, output_root, schedules, whisper_model,
-                confirmed=(entry or {}).get("confirmed"), keep_json=keep_whisper_json(config))
+                confirmed=(entry or {}).get("confirmed"))
         except Exception as e:     # one bad file must not stop the rest
             attempts += 1
             status = "gave_up" if attempts >= MAX_ATTEMPTS else "failed"

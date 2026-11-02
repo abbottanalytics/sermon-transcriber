@@ -62,9 +62,11 @@ schedule_file=
 #   settle_minutes  A recording must be unchanged this long before it is
 #                   processed, so a file still being copied is left alone.
 #   whisper_model   turbo (best), or small / base for faster runs on older Macs.
-#   keep_whisper_json  true to keep Whisper's .json beside the .txt and .srt.
-#                   It has each word's time (for cutting clips on a word) and
-#                   per-segment confidence; Whisper takes somewhat longer.
+#   keep_whisper_json  Which types keep Whisper's .json beside the .txt and
+#                   .srt: sermon, talk (the default), any of sermon / talk /
+#                   class / meeting, or true / false for all. It has each
+#                   word's time (for cutting reels on a word); working those
+#                   out makes Whisper take somewhat longer.
 #   higher_ed_teacher  Default teacher for Higher Ed classes (optional; Sermon
 #                   Helper can set it per class). Blank: the documents say
 #                   "the teacher".
@@ -74,7 +76,7 @@ process_from=
 run_times=Sun 13:00, Sun 19:00, Sun 23:00
 settle_minutes=10
 whisper_model=turbo
-keep_whisper_json=false
+keep_whisper_json=sermon, talk
 higher_ed_teacher=
 
 # PUBLISHING TO GOOGLE DRIVE (see README "Publishing to Google Drive"):
