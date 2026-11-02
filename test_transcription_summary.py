@@ -15,6 +15,7 @@ from docx import Document
 import class_summary
 import talk_summary
 import transcription_summary_core as core
+import run_pipeline
 from run_pipeline import prune_whisper_outputs
 
 
@@ -76,6 +77,27 @@ class WhisperOutputTests(unittest.TestCase):
                 (d / f"week 8{ext}").write_text("x")
             prune_whisper_outputs(d, "week 8")
             self.assertEqual(sorted(p.suffix for p in d.iterdir()), [".srt", ".txt"])
+
+    def test_json_kept_with_word_times_on_request(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            for ext in (".txt", ".srt", ".json", ".tsv", ".vtt"):
+                (d / f"week 8{ext}").write_text("x")
+            with mock.patch.object(run_pipeline.subprocess, "run") as run:
+                run_pipeline.run_whisper(d / "week 8.m4a", d, keep_json=True)
+            self.assertIn("--word_timestamps", run.call_args.args[0])
+            self.assertEqual(sorted(p.suffix for p in d.iterdir()), [".json", ".srt", ".txt"])
+
+    def test_no_word_times_by_default(self):
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.object(run_pipeline.subprocess, "run") as run:
+            run_pipeline.run_whisper(Path(d) / "a.m4a", Path(d))
+        self.assertNotIn("--word_timestamps", run.call_args.args[0])
+
+    def test_config_setting(self):
+        self.assertTrue(run_pipeline.keep_whisper_json({"keep_whisper_json": "true"}))
+        self.assertFalse(run_pipeline.keep_whisper_json({"keep_whisper_json": "false"}))
+        self.assertFalse(run_pipeline.keep_whisper_json({}))
 
 
 class ProcessTests(unittest.TestCase):

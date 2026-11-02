@@ -61,16 +61,27 @@ DEFAULT_WHISPER_MODEL = "turbo"
 # Whisper can write one format or all of them. Of its timestamped formats only
 # .srt is kept (YouTube chapters, captions, sermon analysis read it); the
 # others just clutter the folder. .txt is the transcript everything else uses.
+# .json is kept on request (--keep-json, keep_whisper_json=true): it has each
+# word's time, for cutting clips on a word, plus per-segment confidence, and
+# every other format can be rebuilt from it without re-running Whisper.
 WHISPER_DISCARD = (".json", ".tsv", ".vtt")
 
 
-def prune_whisper_outputs(output_dir: Path, stem: str):
-    """Delete the Whisper formats nothing uses, keeping .txt and .srt."""
+def keep_whisper_json(config: dict) -> bool:
+    """config.txt's keep_whisper_json setting."""
+    return str(config.get("keep_whisper_json") or "").strip().lower() in ("true", "yes", "1")
+
+
+def prune_whisper_outputs(output_dir: Path, stem: str, keep_json: bool = False):
+    """Delete the Whisper formats nothing uses, keeping .txt and .srt (and .json if asked)."""
     for ext in WHISPER_DISCARD:
+        if keep_json and ext == ".json":
+            continue
         (output_dir / (stem + ext)).unlink(missing_ok=True)
 
 
-def run_whisper(audio_path: Path, output_dir: Path, model: str = DEFAULT_WHISPER_MODEL):
+def run_whisper(audio_path: Path, output_dir: Path, model: str = DEFAULT_WHISPER_MODEL,
+                keep_json: bool = False):
     print(f"  Transcribing with Whisper ({model}): {audio_path.name}")
     output_dir.mkdir(parents=True, exist_ok=True)
     subprocess.run(
@@ -81,18 +92,22 @@ def run_whisper(audio_path: Path, output_dir: Path, model: str = DEFAULT_WHISPER
             "--fp16", "False",
             "--output_format", "all",
             "--output_dir", str(output_dir),
+            # Word times are what make a kept .json worth having; they cost some
+            # Whisper time, so they're only worked out when it is kept
+            *(["--word_timestamps", "True"] if keep_json else []),
         ],
         check=True,
     )
-    prune_whisper_outputs(output_dir, audio_path.stem)
+    prune_whisper_outputs(output_dir, audio_path.stem, keep_json)
 
 
 def resolve_transcript(input_path: Path, skip_whisper: bool, output_dir: Path,
-                       whisper_model: str = DEFAULT_WHISPER_MODEL) -> Path:
+                       whisper_model: str = DEFAULT_WHISPER_MODEL,
+                       keep_json: bool = False) -> Path:
     if input_path.name.startswith("._"):
         raise ValueError(f"Skipping macOS metadata file: {input_path.name}")
     if input_path.suffix.lower() in MEDIA_EXTENSIONS and not skip_whisper:
-        run_whisper(input_path, output_dir, whisper_model)
+        run_whisper(input_path, output_dir, whisper_model, keep_json)
         txt_path = output_dir / (input_path.stem + ".txt")
     elif input_path.suffix == ".txt":
         txt_path = input_path
@@ -155,7 +170,8 @@ def process_file(client, input_path: Path, content_type: str, overwrite: bool,
                  whisper_model: str = DEFAULT_WHISPER_MODEL,
                  scripture: str | None = None,
                  youtube: dict | None = None,
-                 pronouns: str | None = None):
+                 pronouns: str | None = None,
+                 keep_json: bool = False):
     """youtube: extra fields for <name>.youtube.txt (sermon and talk): conference,
     session, notes, timestamp_offset, intro_length — see youtube_description.py."""
     # Determine where outputs will land so we can check before running Whisper
@@ -182,7 +198,8 @@ def process_file(client, input_path: Path, content_type: str, overwrite: bool,
     effective_out_dir.mkdir(parents=True, exist_ok=True)
 
     if input_path.suffix.lower() in MEDIA_EXTENSIONS:
-        txt_path = resolve_transcript(input_path, skip_whisper, effective_out_dir, whisper_model)
+        txt_path = resolve_transcript(input_path, skip_whisper, effective_out_dir, whisper_model,
+                                      keep_json)
     else:
         txt_path = input_path
 
@@ -251,6 +268,9 @@ def main():
                     help="Where the talk starts in the video (default: --timestamp-offset); "
                          "0:00 to here is a Welcome chapter")
     ap.add_argument("--overwrite", action="store_true", help="Overwrite existing output files")
+    ap.add_argument("--keep-json", action="store_true",
+                    help="Also keep Whisper's .json, with each word's time (for cutting clips); "
+                         "normally only .txt and .srt are kept")
     ap.add_argument("--skip-whisper", action="store_true",
                     help="Skip Whisper even for audio files (assumes .txt already exists)")
     args = ap.parse_args()
@@ -318,6 +338,7 @@ def main():
             scripture=args.scripture or None,
             youtube=youtube,
             pronouns=args.pronouns or None,
+            keep_json=args.keep_json,
         )
 
     print("\nDONE.")

@@ -465,7 +465,7 @@ python3 run_pipeline.py lecture1.mp3 --type talk --timestamp-offset 23 ...
 
 ## Output files
 
-Outputs are written next to the input transcript (or to `--output-dir` if specified). Whisper's own files are the plain transcript (`.txt`) and one timestamped format, `.srt`. Its `.json`, `.tsv` and `.vtt` are deleted as soon as it finishes, since nothing uses them.
+Outputs are written next to the input transcript (or to `--output-dir` if specified). Whisper's own files are the plain transcript (`.txt`) and one timestamped format, `.srt`. Its `.tsv` and `.vtt` are deleted as soon as it finishes, since nothing uses them, and so is its `.json` unless you ask to keep it: `--keep-json` on the command line, or `keep_whisper_json=true` in `config.txt` for the automatic job and Sermon Helper. A kept `.json` has each word's start and end time (for cutting a clip on a word), Whisper's confidence for each segment (to find passages worth checking), and enough to rebuild any other format without re-running Whisper. Working out word times makes Whisper take somewhat longer, so it is only done when the `.json` is kept.
 
 Every sermon, talk and class document starts with a heading: the `--title` if one is given, otherwise a short theme the pipeline names from the transcript. When a title is given (often a series name, such as "Thinking Christianly about Raising Children, week 7") the theme is shown under it as **Theme**. The documents call the speaker by the `--speaker` name rather than "the speaker". They use pronouns only when `--pronouns` gives them, and otherwise repeat the name instead of guessing from it.
 
