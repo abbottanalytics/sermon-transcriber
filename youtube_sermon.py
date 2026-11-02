@@ -67,11 +67,8 @@ class SermonFromYouTube:
 
     def client(self):
         if self._client is None:
-            api_key = os.getenv("OPENAI_API_KEY") or self.config.get("api_key", "")
-            if api_key:
-                from openai import OpenAI
-                os.environ["OPENAI_API_KEY"] = api_key
-                self._client = OpenAI(api_key=api_key)
+            from transcription_summary_core import make_client
+            self._client = make_client(self.config)
         return self._client
 
     def folder_for(self, when: date) -> Path:

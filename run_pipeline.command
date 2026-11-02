@@ -20,9 +20,12 @@ echo "  Transcription & Summarization Pipeline"
 echo "================================================"
 echo ""
 
-# ── Check: OPENAI_API_KEY ────────────────────────────────────────────────────
-if [[ -z "${OPENAI_API_KEY:-}" ]]; then
-    echo "ERROR: OpenAI API key not found."
+# ── Load config defaults ──────────────────────────────────────────────────────
+read_config
+
+# ── Check: API key ───────────────────────────────────────────────────────────
+if ! have_api_key; then
+    echo "ERROR: API key not found."
     echo ""
     echo "To fix this, open your settings file:"
     echo ""
@@ -32,7 +35,8 @@ if [[ -z "${OPENAI_API_KEY:-}" ]]; then
     echo ""
     echo "  api_key=sk-paste-your-key-here"
     echo ""
-    echo "You can get a key at: https://platform.openai.com/api-keys"
+    echo "OpenAI keys: https://platform.openai.com/api-keys"
+    echo "Claude keys (with provider=claude): https://platform.claude.com/settings/keys"
     echo ""
     read -rp "Press Enter to close..." _
     exit 1
@@ -46,9 +50,6 @@ if ! command -v python3 &>/dev/null; then
     read -rp "Press Enter to close..." _
     exit 1
 fi
-
-# ── Load config defaults ──────────────────────────────────────────────────────
-read_config
 
 # ── helper: native macOS file/folder picker via AppleScript ──────────────────
 pick_file() {

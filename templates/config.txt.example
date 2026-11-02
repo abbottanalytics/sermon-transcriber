@@ -19,6 +19,24 @@
 #   If OPENAI_API_KEY is already set in your shell, that value is used
 #   and api_key below is ignored.
 #
+# WHO WRITES THE DOCUMENTS (provider):
+#   provider   openai (ChatGPT, the default; also used when blank or not
+#              recognized), claude, openrouter (many companies' models
+#              through one OpenRouter key), or local (an open-source model
+#              on this Mac, through Ollama or LM Studio)
+#   api_key    The key for that provider: an OpenAI key (sk-...), or a Claude
+#              key (sk-ant-..., from https://platform.claude.com/settings/keys;
+#              ANTHROPIC_API_KEY in the shell wins), or an OpenRouter key
+#              (sk-or-..., from https://openrouter.ai/keys; OPENROUTER_API_KEY
+#              in the shell wins). local needs none.
+#   model      Blank: gpt-4.1-mini for openai, claude-opus-5-5 for claude,
+#              openai/gpt-4.1-mini for openrouter, llama3.1 for local.
+#              Cheaper Claude models: claude-sonnet-5-5, claude-haiku-5-5.
+#              OpenRouter names include the company: anthropic/..., openai/...
+#   llm_url    local only: the server's address. Blank: Ollama's,
+#              http://localhost:11434/v1 (LM Studio's is http://localhost:1234/v1)
+#   Whisper always runs on this Mac, whichever provider is chosen.
+#
 # Leave input_dir or output_dir blank to be prompted each time.
 #
 # PREACHING SCHEDULE:
@@ -41,7 +59,10 @@ enable_classes=true
 enable_talks=true
 enable_meetings=true
 
+provider=openai
 api_key=sk-paste-your-key-here
+model=
+llm_url=
 input_dir=/Users/yourname/Documents/Church/Sermons/Audio
 output_dir=/Users/yourname/Documents/Church/Sermons/Output
 schedule_sheet=

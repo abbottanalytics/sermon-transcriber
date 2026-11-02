@@ -36,20 +36,20 @@ Options:
 
 REQUIREMENTS
 ------------
-  OPENAI_API_KEY must be set in your environment:
-    export OPENAI_API_KEY='sk-...'
+  An API key for the provider in config.txt (openai unless set: see
+  make_client in transcription_summary_core.py): api_key there, or
+    export OPENAI_API_KEY='sk-...'        (ANTHROPIC_API_KEY for claude)
 
   Python packages: pyproject.toml (installed by install.sh / update.sh via uv)
   Whisper and ffmpeg are included; no separate install needed
 """
 
 import argparse
-import os
 import subprocess
 import sys
 from pathlib import Path
 
-from openai import OpenAI
+from transcription_summary_core import describe_client, make_client
 
 AUDIO_EXTENSIONS = {".mp3", ".m4a", ".wav"}
 # Whisper decodes the audio track of a video itself (via ffmpeg), so no separate extraction step.
@@ -287,12 +287,12 @@ def main():
                     help="Skip Whisper even for audio files (assumes .txt already exists)")
     args = ap.parse_args()
 
-    if not os.getenv("OPENAI_API_KEY"):
-        print("ERROR: OPENAI_API_KEY is not set.", file=sys.stderr)
-        print("  export OPENAI_API_KEY='sk-...'", file=sys.stderr)
+    client = make_client()
+    if client is None:
+        print("ERROR: no API key. Set api_key in config.txt, or OPENAI_API_KEY "
+              "(ANTHROPIC_API_KEY when provider=claude) in your shell.", file=sys.stderr)
         sys.exit(1)
-
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    print(f"Documents by {describe_client(client)}")
 
     # Load agenda once if provided (meeting only)
     agenda_md = None

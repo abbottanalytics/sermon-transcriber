@@ -120,6 +120,75 @@ class WhisperOutputTests(unittest.TestCase):
                 self.assertEqual(rt.call_args.args[4], expected, kind)
 
 
+class ProviderTests(unittest.TestCase):
+    def test_provider_names(self):
+        self.assertEqual(core.provider_name("Claude"), "claude")
+        self.assertEqual(core.provider_name("anthropic"), "claude")
+        self.assertEqual(core.provider_name("ollama"), "local")
+        self.assertEqual(core.provider_name("ChatGPT"), "openai")
+        # Blank or unknown: OpenAI
+        self.assertEqual(core.provider_name(""), "openai")
+        self.assertEqual(core.provider_name(None), "openai")
+        with mock.patch("sys.stderr"):
+            self.assertEqual(core.provider_name("gemini"), "openai")
+
+    def test_make_client(self):
+        with mock.patch.dict("os.environ", {}, clear=True):
+            self.assertIsNone(core.make_client({}))
+            self.assertIsNone(core.make_client({"provider": "claude"}))
+            claude = core.make_client({"provider": "claude", "api_key": "k"})
+            self.assertEqual((claude.provider, claude.model), ("claude", "claude-opus-5-5"))
+            local = core.make_client({"provider": "local", "model": "qwen3"})
+            self.assertEqual((local.provider, local.model), ("local", "qwen3"))
+            self.assertEqual(str(local.sdk.base_url), core.LOCAL_URL + "/")
+            # OpenRouter needs its own key and defaults to its own address
+            self.assertIsNone(core.make_client({"provider": "openrouter"}))
+            router = core.make_client({"provider": "OpenRouter", "api_key": "sk-or-k"})
+            self.assertEqual((router.provider, router.model), ("openrouter", "openai/gpt-4.1-mini"))
+            self.assertEqual(str(router.sdk.base_url), core.OPENROUTER_URL + "/")
+        with mock.patch.dict("os.environ", {"ANTHROPIC_API_KEY": "env"}, clear=True):
+            self.assertEqual(core.provider_api_key({"api_key": "cfg"}, "claude"), "env")
+            self.assertEqual(core.provider_api_key({"api_key": "cfg"}, "openai"), "cfg")
+
+    def claude_client(self, stop_reason="end_turn", model="claude-opus-5-5"):
+        resp = mock.Mock(stop_reason=stop_reason, content=[
+            mock.Mock(type="thinking"), mock.Mock(type="text", text="Hello")])
+        sdk = mock.Mock()
+        sdk.beta.messages.create.return_value = resp
+        return core.LLMClient("claude", model, sdk)
+
+    def test_claude_call(self):
+        client = self.claude_client()
+        self.assertEqual(core.call_llm(client, "sys", "user"), "Hello")
+        kwargs = client.sdk.beta.messages.create.call_args.kwargs
+        self.assertEqual(kwargs["system"], "sys")
+        self.assertEqual(kwargs["extra_body"], {"fallbacks": "default"})
+        haiku = self.claude_client(model="claude-haiku-5-5")
+        core.call_llm(haiku, "sys", "user")
+        self.assertNotIn("extra_body", haiku.sdk.beta.messages.create.call_args.kwargs)
+
+    def test_refusal_not_retried(self):
+        client = self.claude_client(stop_reason="refusal")
+        with self.assertRaises(core.LLMRefusal):
+            core.call_llm(client, "sys", "user")
+        self.assertEqual(client.sdk.beta.messages.create.call_count, 1)
+
+    def test_local_call(self):
+        sdk = mock.Mock()
+        sdk.chat.completions.create.return_value.choices = [mock.Mock(message=mock.Mock(content="Hi"))]
+        self.assertEqual(core.call_llm(core.LLMClient("local", "llama3.1", sdk), "s", "u"), "Hi")
+        messages = sdk.chat.completions.create.call_args.kwargs["messages"]
+        self.assertEqual([m["role"] for m in messages], ["system", "user"])
+
+    def test_openrouter_call(self):
+        sdk = mock.Mock()
+        sdk.chat.completions.create.return_value.choices = [mock.Mock(message=mock.Mock(content="Hi"))]
+        client = core.LLMClient("openrouter", "anthropic/claude-haiku-5-5", sdk)
+        self.assertEqual(core.call_llm(client, "s", "u"), "Hi")
+        self.assertEqual(sdk.chat.completions.create.call_args.kwargs["model"],
+                         "anthropic/claude-haiku-5-5")
+
+
 class ProcessTests(unittest.TestCase):
     def run_class(self, d: Path, prompts: list):
         txt = d / "week 8.txt"

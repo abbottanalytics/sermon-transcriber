@@ -85,7 +85,8 @@ cmd_install() {
     home="$(settings_home)"
     watch="$(config_value watch_dir)"
     [[ -n "$watch" ]] || fail "Set watch_dir in $home/config.txt first (the folder recordings land in)."
-    [[ -n "$(config_value api_key)" || -n "${OPENAI_API_KEY:-}" ]] ||
+    [[ -n "$(config_value api_key)" || -n "${OPENAI_API_KEY:-}" ||
+       "$(config_value provider)" == local ]] ||
         echo "WARNING: no api_key in config.txt yet — sermons will wait until one is added."
 
     launcher="$home/bin/SermonTranscriberAgent"

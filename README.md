@@ -67,6 +67,21 @@ The lookup order is: shell environment first, then `config.txt`. This means deve
 
 > **Keep your key private.** Anyone with your key can charge usage to your account. Do not share `config.txt`, email it, or post it anywhere.
 
+### Using Claude or a local model instead
+
+`provider` in `config.txt` chooses who writes the documents; Whisper runs on the Mac either way.
+
+| `provider` | `api_key` | `model` when blank |
+|---|---|---|
+| `openai` (also blank or unrecognized) | OpenAI key, `sk-...` (`OPENAI_API_KEY` in the shell wins) | `gpt-4.1-mini` |
+| `claude` | Claude key, `sk-ant-...`, from [platform.claude.com](https://platform.claude.com/settings/keys) (`ANTHROPIC_API_KEY` in the shell wins) | `claude-opus-5-5` |
+| `openrouter` | OpenRouter key, `sk-or-...`, from [openrouter.ai/keys](https://openrouter.ai/keys) (`OPENROUTER_API_KEY` in the shell wins) | `openai/gpt-4.1-mini` |
+| `local` | none | `llama3.1` |
+
+`model` names another model of that provider, e.g. `claude-sonnet-5-5` or `claude-haiku-5-5` (cheaper; see [Cost notes](#cost-notes)). OpenRouter reaches many companies' models with one key; its names include the company (`openai/gpt-4.1-mini`, `anthropic/claude-haiku-5-5`), and its prices are listed on each model's page there. `local` is any open-source model served on this Mac with an OpenAI-compatible server: [Ollama](https://ollama.com) (`ollama pull llama3.1`; the default address) or LM Studio (set `llm_url=http://localhost:1234/v1`). Local models are free but slow on an Intel Mac, and small ones condense or drift more when cleaning a transcript, so compare a week's documents before relying on one. Claude requests turn on Anthropic's refusal fallback: if a model declines a request, another Claude model answers it in the same call.
+
+The run prints the provider and model it is using (`Documents by claude (claude-opus-5-5)`); the automatic job logs it.
+
 ---
 
 ## Settings folder
@@ -231,7 +246,9 @@ What you confirm is saved, and it's used again if the agent ever redoes that rec
 Edit `config.txt` in the settings folder (plain text, any text editor) to configure the pipeline:
 
 ```
-api_key=sk-...                # Your OpenAI API key
+provider=openai              # openai (default), claude, openrouter or local
+api_key=sk-...                # That provider's key
+model=                        # Blank: the provider's default
 input_dir=/Users/yourname/... # Default input folder
 output_dir=/Users/yourname/.. # Default output folder
 schedule_file=                # Default preaching schedule CSV (optional)
@@ -244,7 +261,7 @@ enable_meetings=true          # Show/hide Meeting option in the menu
 
 **Content type toggles:** set any of the `enable_*` values to `false` to remove that option from the menu entirely. A church AV team that only processes sermons would set `enable_talks=false` and `enable_meetings=false` — the menu then shows only "Sermon" with no other choices to confuse things.
 
-**API key:** the value in `config.txt` is used unless `OPENAI_API_KEY` is already set in your shell environment (in which case the shell value takes precedence).
+**API key:** the value in `config.txt` is used unless the provider's variable (`OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` for Claude) is already set in your shell environment (in which case the shell value takes precedence). See [Using Claude or a local model instead](#using-claude-or-a-local-model-instead).
 
 **Directories:** used as defaults each run. Leave blank to be prompted each time.
 
@@ -564,6 +581,9 @@ recordings. To change it, edit the `--model` line in `run_pipeline.py`
 
 ## Cost notes
 
-Processing uses `gpt-4.1-mini`. A typical sermon (~45 min, ~6 000 words)
+Processing uses `gpt-4.1-mini` by default. A typical sermon (~45 min, ~6 000 words)
 costs roughly $0.02–$0.05 to process all four outputs. Meeting processing
-is similar.
+is similar. With `provider=claude` it is roughly $0.50–$1 a sermon on
+`claude-opus-5-5`, $0.25–$0.50 on `claude-sonnet-5-5` and a few cents on
+`claude-haiku-5-5` (list prices as of October 2026; Opus and Sonnet think
+before answering, which adds output). `local` costs nothing.

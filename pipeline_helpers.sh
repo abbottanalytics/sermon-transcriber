@@ -31,7 +31,8 @@ PREACHER_CAP=5
 
 # ---------------------------------------------------------------------------
 # read_config
-# Sets DEFAULT_INPUT and DEFAULT_OUTPUT from config.txt
+# Sets DEFAULT_INPUT and DEFAULT_OUTPUT from config.txt, and exports
+# api_key as OPENAI_API_KEY for the key check below
 # ---------------------------------------------------------------------------
 read_config() {
     DEFAULT_INPUT=""
@@ -42,6 +43,7 @@ read_config() {
     ENABLE_MEETINGS=true
     ENABLE_CLASSES=true
     DEFAULT_HE_TEACHER=""
+    LLM_PROVIDER_SETTING=""
     if [[ ! -f "$CONFIG_FILE" ]]; then return; fi
 
     while IFS='=' read -r key value; do
@@ -71,8 +73,23 @@ read_config() {
             enable_meetings) ENABLE_MEETINGS="$value"  ;;
             enable_classes)  ENABLE_CLASSES="$value"   ;;
             higher_ed_teacher) DEFAULT_HE_TEACHER="$value" ;;
+            provider)        LLM_PROVIDER_SETTING="$value" ;;
         esac
     done < "$CONFIG_FILE"
+}
+
+
+# ---------------------------------------------------------------------------
+# have_api_key
+# True when there is a key for the provider in config.txt (after read_config).
+# A local model needs none. Python works out which key goes with which provider.
+# ---------------------------------------------------------------------------
+have_api_key() {
+    case "$(printf '%s' "$LLM_PROVIDER_SETTING" | tr '[:upper:]' '[:lower:]')" in
+        local|ollama|lmstudio) return 0 ;;
+    esac
+    [[ -n "${OPENAI_API_KEY:-}" || -n "${ANTHROPIC_API_KEY:-}" ||
+       -n "${OPENROUTER_API_KEY:-}" ]]
 }
 
 

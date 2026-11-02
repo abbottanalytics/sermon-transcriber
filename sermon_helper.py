@@ -160,12 +160,8 @@ class Helper:
 
     def client(self):
         if self._client is None:
-            api_key = os.getenv("OPENAI_API_KEY") or self.config.get("api_key", "")
-            if not api_key:
-                return None
-            from openai import OpenAI
-            os.environ["OPENAI_API_KEY"] = api_key
-            self._client = OpenAI(api_key=api_key)
+            from transcription_summary_core import make_client
+            self._client = make_client(self.config)
         return self._client
 
     def handle(self, audio: Path):
@@ -223,7 +219,7 @@ class Helper:
             return
         client = self.client()
         if client is None:
-            dlg.info(f"There's no OpenAI API key yet. Add it on the api_key line of\n\n"
+            dlg.info(f"There's no API key yet. Add it on the api_key line of\n\n"
                      f"{self.home / 'config.txt'}")
             return
 
@@ -290,7 +286,7 @@ class Helper:
 
         client = self.client()
         if client is None:
-            dlg.info(f"There's no OpenAI API key yet. Add it on the api_key line of\n\n"
+            dlg.info(f"There's no API key yet. Add it on the api_key line of\n\n"
                      f"{self.home / 'config.txt'}")
             return
 

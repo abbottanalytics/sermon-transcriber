@@ -11,16 +11,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=pipeline_helpers.sh
 source "$SCRIPT_DIR/pipeline_helpers.sh"
 
+# ── Load config defaults ──────────────────────────────────────────────────────
+read_config
+
 # ── Pre-flight checks ─────────────────────────────────────────────────────────
-if [[ -z "${OPENAI_API_KEY:-}" ]]; then
-    echo "ERROR: OpenAI API key not found."
+if ! have_api_key; then
+    echo "ERROR: API key not found."
     echo "  Add your key to $CONFIG_FILE:  api_key=sk-..."
     echo "  Or set it in your shell:     export OPENAI_API_KEY='sk-...'"
     exit 1
 fi
-
-# ── Load config defaults ──────────────────────────────────────────────────────
-read_config
 
 echo ""
 echo "================================================"

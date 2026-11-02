@@ -32,7 +32,7 @@
 import argparse
 import subprocess
 from pathlib import Path
-from openai import OpenAI
+from transcription_summary_core import make_client
 import os, sys
 
 from meeting_summary import (
@@ -83,15 +83,7 @@ def main():
     if not txt_path.exists():
         raise ValueError(f"Transcript not found: {txt_path}")
 
-#    client = OpenAI()
-#    client = OpenAI(
-#        api_key=os.getenv("OPENAI_API_KEY"),
-#        # force correct project context
-#        default_headers={
-#            "OpenAI-Project": "proj_q7GPB1fPSEMtqkhqd6kZKSFs"
-#        }
-#    )
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = make_client()
 
     # ------------------------
     # STEP 2: LOAD + NORMALIZE AGENDA

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 from pathlib import Path
-from openai import OpenAI
-import os
+from transcription_summary_core import make_client
 from sermon_summary import process_sermon
 
 def main():
@@ -11,7 +10,7 @@ def main():
     ap.add_argument("--overwrite", action="store_true")
     args = ap.parse_args()
 
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = make_client()
 
     for p in args.paths:
         path = Path(p)

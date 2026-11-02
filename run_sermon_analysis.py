@@ -30,14 +30,11 @@ Options:
 
 import argparse
 import json
-import os
 import re
 import sys
 from pathlib import Path
 
-from openai import OpenAI
-
-from transcription_summary_core import read_text, write_docx
+from transcription_summary_core import make_client, read_text, write_docx
 from sermon_analysis import analyze_sermon, build_report_markdown
 
 
@@ -234,11 +231,11 @@ def main():
     ap.add_argument("--overwrite",  action="store_true", help="Re-analyze even if output exists")
     args = ap.parse_args()
 
-    if not os.getenv("OPENAI_API_KEY"):
-        print("ERROR: OPENAI_API_KEY is not set.", file=sys.stderr)
+    client = make_client()
+    if client is None:
+        print("ERROR: no API key. Set api_key in config.txt, or OPENAI_API_KEY "
+              "(ANTHROPIC_API_KEY when provider=claude) in your shell.", file=sys.stderr)
         sys.exit(1)
-
-    client     = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     inputs     = collect_inputs(args.paths)
     output_dir = Path(args.output_dir).expanduser().resolve() if args.output_dir else None
 

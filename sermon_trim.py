@@ -163,13 +163,13 @@ def cut(source: Path, dest: Path, start: float, end: float):
 
 
 def main():
-    import os
     args = sys.argv[1:]
     if len(args) == 2 and args[0] == "suggest":
-        from openai import OpenAI
-        from app_home import read_config
-        key = os.getenv("OPENAI_API_KEY") or read_config().get("api_key", "")
-        s = suggest(OpenAI(api_key=key), Path(args[1]).read_text(encoding="utf-8"))
+        from transcription_summary_core import make_client
+        client = make_client()
+        if client is None:
+            sys.exit("No API key: set api_key in config.txt.")
+        s = suggest(client, Path(args[1]).read_text(encoding="utf-8"))
         if s is None:
             sys.exit("No sermon found in the captions.")
         print(f"{format_time(s.start)} → {format_time(s.end)}  ({(s.end - s.start) / 60:.0f} min, "

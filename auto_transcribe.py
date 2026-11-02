@@ -34,7 +34,10 @@ Settings (config.txt in the settings folder):
     higher_ed_teacher  Teacher named in Higher Ed class documents (optional)
     schedule_sheet   Preaching schedule Google Sheet URL (see google_sheet.py), or
     schedule_file    a preaching schedule CSV instead (optional)
-    api_key          OpenAI key (or OPENAI_API_KEY in the environment)
+    provider         Who writes the documents: openai (the default), claude,
+                     openrouter or local
+    api_key          That provider's key (or its variable, e.g. OPENAI_API_KEY)
+    model            Model name (blank: the provider's default)
     publish_dir      Google Drive folder for finished documents (optional)
 
 USAGE:
@@ -454,14 +457,13 @@ def run(dry_run: bool) -> int:
         _remind_unpublished(ledger)
         return 0
 
-    api_key = os.getenv("OPENAI_API_KEY") or config.get("api_key", "")
-    if not api_key:
-        log.error("No OpenAI API key — set api_key in %s", home / "config.txt")
-        notify_once_a_day(ledger, "no_key", "Can't make sermon documents: no OpenAI API key in config.txt.")
+    from transcription_summary_core import describe_client, make_client
+    client = make_client(config)
+    if client is None:
+        log.error("No API key — set api_key in %s", home / "config.txt")
+        notify_once_a_day(ledger, "no_key", "Can't make sermon documents: no API key in config.txt.")
         return 1
-    from openai import OpenAI
-    os.environ["OPENAI_API_KEY"] = api_key
-    client = OpenAI(api_key=api_key)
+    log.info("Documents by %s", describe_client(client))
 
     output_root = Path(config.get("output_dir") or home / "output").expanduser()
     whisper_model = config.get("whisper_model") or DEFAULT_WHISPER_MODEL

@@ -23,8 +23,7 @@
 
 import argparse
 from pathlib import Path
-from openai import OpenAI
-import os
+from transcription_summary_core import make_client
 
 from meeting_summary import (
     process_meeting,
@@ -46,7 +45,7 @@ def main():
 
     args = ap.parse_args()
 
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = make_client()
 
     # -------------------------
     # LOAD + NORMALIZE AGENDA
