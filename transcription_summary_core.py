@@ -28,8 +28,6 @@ except ImportError:
 
 from openai import OpenAI
 from docx import Document
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
 from docx.shared import Pt
 
 MODEL = "gpt-4.1-mini"
@@ -121,6 +119,8 @@ DETAILED_OUTLINE_RULES = (
 # **bold**, __bold__, *italic* or _italic_ inside a line
 _INLINE = re.compile(r"(\*\*.+?\*\*|__.+?__|(?<![*\w])\*(?!\s).+?(?<!\s)\*(?![*\w])|(?<!\w)_(?!\s).+?(?<!\s)_(?!\w))")
 _BULLET = re.compile(r"^(\s*)[-*•]\s+(.*)$")
+# An outline line: "I. ...", "A. ...", "1. ...", "a. ..."
+_OUTLINE_LINE = re.compile(r"^\s*([IVXLC]+|[A-Za-z]|\d+)[.)]\s")
 
 
 def _add_inline(paragraph, text: str):
@@ -137,15 +137,12 @@ def _add_inline(paragraph, text: str):
             paragraph.add_run(part)
 
 
-def _add_rule(doc):
-    """A horizontal line, for a Markdown '---'."""
-    p = doc.add_paragraph()
-    border = OxmlElement("w:pBdr")
-    bottom = OxmlElement("w:bottom")
-    for key, value in (("w:val", "single"), ("w:sz", "6"), ("w:space", "1"), ("w:color", "999999")):
-        bottom.set(qn(key), value)
-    border.append(bottom)
-    p._p.get_or_add_pPr().append(border)
+def _set_spacing(doc):
+    """Space between paragraphs comes from the styles, so the documents need no
+    empty paragraphs (the hard returns people otherwise delete by hand)."""
+    doc.styles["Normal"].paragraph_format.space_after = Pt(8)
+    for name in ("List Bullet", "List Bullet 2"):
+        doc.styles[name].paragraph_format.space_after = Pt(3)
 
 
 def write_docx(path, markdown_text, overwrite):
@@ -154,6 +151,7 @@ def write_docx(path, markdown_text, overwrite):
         return
 
     doc = Document()
+    _set_spacing(doc)
 
     for line in markdown_text.splitlines():
         line = line.rstrip()            # Markdown's trailing-space line breaks
@@ -163,7 +161,7 @@ def write_docx(path, markdown_text, overwrite):
             # Headings are bold already; drop any marks inside them
             doc.add_heading(re.sub(r"\*\*|__", "", heading.group(2)), level=len(heading.group(1)))
         elif re.fullmatch(r"\s*([-*_])(\s*\1){2,}\s*", line):
-            _add_rule(doc)
+            continue                    # Markdown '---': headings already separate sections
         elif line.startswith("> "):
             p = doc.add_paragraph()
             _add_inline(p, line[2:])
@@ -174,10 +172,13 @@ def write_docx(path, markdown_text, overwrite):
             p = doc.add_paragraph(style="List Bullet" if level == 1 else "List Bullet 2")
             _add_inline(p, bullet.group(2))
         elif line.strip() == "":
-            doc.add_paragraph("")
+            continue                    # paragraph spacing is in the styles
         else:
             p = doc.add_paragraph()
             _add_inline(p, line)
+            if _OUTLINE_LINE.match(line):
+                # Outline lines sit close together, like a list
+                p.paragraph_format.space_after = Pt(3)
 
     doc.save(path)
     print(f"WROTE: {path}")

@@ -53,6 +53,21 @@ class HeaderTests(unittest.TestCase):
         self.assertIn("Don't guess", core.speaker_rule("Barbara Abbott"))
 
 
+class DocxSpacingTests(unittest.TestCase):
+    def test_no_empty_paragraphs_or_rules(self):
+        md = "**Teacher:** B\n\n---\n\n# Title\n\nFirst paragraph.\n\n\nSecond.\n\n- a\n- b\n\nI. Point\n   A. Sub\n"
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "x.docx"
+            core.write_docx(path, md, overwrite=True)
+            doc = Document(path)
+        texts = [p.text for p in doc.paragraphs]
+        self.assertNotIn("", texts)
+        self.assertEqual(texts, ["Teacher: B", "Title", "First paragraph.", "Second.",
+                                 "a", "b", "I. Point", "   A. Sub"])
+        self.assertEqual(doc.styles["Normal"].paragraph_format.space_after.pt, 8)
+        self.assertEqual(doc.paragraphs[-1].paragraph_format.space_after.pt, 3)
+
+
 class WhisperOutputTests(unittest.TestCase):
     def test_only_txt_and_srt_kept(self):
         with tempfile.TemporaryDirectory() as d:
