@@ -1,18 +1,21 @@
 from pathlib import Path
 from transcription_summary_core import (
     call_llm, read_text, write_docx, write_text,
-    clean_transcript, estimate_tokens, build_metadata_header,
+    clean_transcript, estimate_tokens, build_document_header, infer_theme, speaker_rule,
+    BRIEF_OUTLINE_RULES, DETAILED_OUTLINE_RULES,
 )
 from youtube_description import write_youtube_description
 
 
-def create_outline(client, cleaned_md: str) -> str:
+def create_outline(client, cleaned_md: str, detailed: bool = False,
+                   speaker: str = None, pronouns: str = None) -> str:
     system = (
-        "Create a structured outline of the sermon.\n"
-        "Output in Markdown with:\n"
-        "- Roman numerals for major points (I, II, III...)\n"
-        "- Lettered subpoints (A, B, C...)\n"
-        "- Include key Scripture references explicitly mentioned.\n"
+        ("Create a detailed outline of the sermon, following it point by point.\n"
+         if detailed else "Create a brief outline of the sermon.\n")
+        + "Output in Markdown with:\n"
+        + (DETAILED_OUTLINE_RULES if detailed else BRIEF_OUTLINE_RULES)
+        + speaker_rule(speaker, pronouns, role="preacher")
+        + "- Include key Scripture references explicitly mentioned.\n"
         "- Keep it faithful to the sermon; do not invent content.\n"
         "- Use plain text indentation only (spaces or hyphens). "
         "Do NOT use HTML entities such as &nbsp;."
@@ -20,10 +23,12 @@ def create_outline(client, cleaned_md: str) -> str:
     return call_llm(client, system, cleaned_md).strip()
 
 
-def create_summary(client, cleaned_md: str) -> str:
+def create_summary(client, cleaned_md: str, speaker: str = None,
+                   pronouns: str = None) -> str:
     system = (
         "Write a clear 1–2 page summary of the sermon for church leaders.\n"
-        "- Capture main thesis, flow, doctrinal emphasis, and applications.\n"
+        + speaker_rule(speaker, pronouns, role="preacher")
+        + "- Capture main thesis, flow, doctrinal emphasis, and applications.\n"
         "- Use short headings if helpful.\n"
         "- Include Scripture references explicitly mentioned.\n"
         "- Do not quote large blocks; short quotes are fine."
@@ -75,21 +80,27 @@ def create_podcast_description(client, cleaned_md: str,
 
 def process_sermon(client, txt_path: Path, overwrite: bool,
                    out_base: Path = None, speaker: str = None, event: str = None,
-                   title: str = None, scripture: str = None, youtube: dict = None):
+                   title: str = None, scripture: str = None, youtube: dict = None,
+                   pronouns: str = None):
     base = out_base if out_base else txt_path.with_suffix("")
-    meta = build_metadata_header({"Speaker": speaker, "Title": title,
-                                  "Scripture": scripture, "Event": event})
 
     print("  Cleaning transcript...")
     cleaned = clean_transcript(client, read_text(txt_path))
+
+    print("  Naming the theme...")
+    theme = infer_theme(client, cleaned, "sermon")
+    meta = build_document_header(title, theme, {"Speaker": speaker, "Scripture": scripture,
+                                                "Event": event})
     write_docx(base.with_suffix(".cleaned.docx"), meta + cleaned, overwrite)
 
-    print("  Generating outline...")
-    outline = create_outline(client, cleaned)
+    print("  Generating outlines...")
+    outline = create_outline(client, cleaned, speaker=speaker, pronouns=pronouns)
     write_docx(base.with_suffix(".outline.docx"), meta + outline, overwrite)
+    detailed = create_outline(client, cleaned, detailed=True, speaker=speaker, pronouns=pronouns)
+    write_docx(base.with_suffix(".outline_detailed.docx"), meta + detailed, overwrite)
 
     print("  Generating summary...")
-    summary = create_summary(client, cleaned)
+    summary = create_summary(client, cleaned, speaker, pronouns)
     write_docx(base.with_suffix(".summary.docx"), meta + summary, overwrite)
 
     print("  Inferring Scripture...")
@@ -102,6 +113,7 @@ def process_sermon(client, txt_path: Path, overwrite: bool,
     write_text(base.with_suffix(".podcast.txt"), podcast, overwrite)
 
     print("  Writing YouTube description...")
-    write_youtube_description(client, base, txt_path.with_suffix(".srt"), outline, summary,
+    # The detailed outline's finer points give chapters closer start times
+    write_youtube_description(client, base, txt_path.with_suffix(".srt"), detailed, summary,
                               overwrite, kind="sermon", speaker=speaker, event=event,
                               title=title, **(youtube or {}))

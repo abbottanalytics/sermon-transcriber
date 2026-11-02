@@ -130,6 +130,7 @@ python3 run_pipeline.py meeting.mp3 --type meeting
 python3 run_pipeline.py talk.mp3 --type talk
 python3 run_pipeline.py talk.mp4 --type talk      # video works too (Whisper reads the audio track)
 python3 run_pipeline.py 110126HE.mp3 --type class --speaker "Elder Smith"   # Higher Ed class; --speaker is the teacher
+python3 run_pipeline.py week3.m4a --type class --speaker "Barbara Abbott" --pronouns "she/her"
 
 # Existing transcript — skip Whisper
 python3 run_pipeline.py sermon.txt --type sermon
@@ -320,17 +321,19 @@ Sermon Transcripts/
   Sermons/2026/2026-11-01 AM - Praising God's Justice (Derek Rishmawy)/
       2026-11-01 AM Summary.docx
       2026-11-01 AM Outline.docx
+      2026-11-01 AM Detailed outline.docx
       2026-11-01 AM Scripture.docx
       2026-11-01 AM Transcript.docx          (the cleaned transcript)
       2026-11-01 AM Podcast description.txt
   Higher Ed/2026/2026-11-01 Higher Ed - Romans (Elder Smith)/   (only with publish_classes=true)
       2026-11-01 Higher Ed Summary.docx
       2026-11-01 Higher Ed Outline.docx
+      2026-11-01 Higher Ed Detailed outline.docx
       2026-11-01 Higher Ed Discussion guide.docx
       2026-11-01 Higher Ed Podcast description.txt
 ```
 
-Whisper's raw working files (`.txt`, `.json`, `.tsv`) and the logs stay on the Mac.
+Whisper's raw transcript (`.txt`, `.srt`) and the logs stay on the Mac.
 
 **Set it up**, once, on the AV computer:
 
@@ -352,7 +355,7 @@ Whisper's raw working files (`.txt`, `.json`, `.tsv`) and the logs stay on the M
 - **Only checked documents are published.** A sermon whose speaker is missing or guessed (the ⚠ ones) stays off Drive until someone confirms it in Sermon Helper, which then publishes it.
 - **Corrections replace the old copy.** Redoing a recording updates its Drive folder. If the title or speaker changed, the folder gets the new name and the old one goes to Drive's trash. Files someone else added to a folder are left alone.
 - **If Drive isn't running** (signed out, or the Mac started offline), the documents are still made, and they're copied on a later run. A daily notification says what's waiting.
-- **Settings:** `publish_classes=true` also publishes the Higher Ed class documents. Those documents never name class members and leave out personal things people shared, but read a few before turning this on: it's off by default because the recording includes the whole room. A class's full transcript keeps everything that was said, so it's published only with `publish_class_transcripts=true` as well. `publish_captions=true` adds `.srt`/`.vtt` caption files with timestamps (for a class, only together with its transcript).
+- **Settings:** `publish_classes=true` also publishes the Higher Ed class documents. Those documents never name class members and leave out personal things people shared, but read a few before turning this on: it's off by default because the recording includes the whole room. A class's full transcript keeps everything that was said, so it's published only with `publish_class_transcripts=true` as well. `publish_captions=true` adds the `.srt` caption file with timestamps (for a class, only together with its transcript).
 - The agent's Full Disk Access permission covers the Drive folder too.
 - Leave `publish_dir` blank to turn publishing off.
 
@@ -462,17 +465,24 @@ python3 run_pipeline.py lecture1.mp3 --type talk --timestamp-offset 23 ...
 
 ## Output files
 
-Outputs are written next to the input transcript (or to `--output-dir` if specified). For a file named `081912AM-Genesis.txt`:
+Outputs are written next to the input transcript (or to `--output-dir` if specified). Whisper's own files are the plain transcript (`.txt`) and one timestamped format, `.srt`. Its `.json`, `.tsv` and `.vtt` are deleted as soon as it finishes, since nothing uses them.
+
+Every sermon, talk and class document starts with a heading: the `--title` if one is given, otherwise a short theme the pipeline names from the transcript. When a title is given (often a series name, such as "Thinking Christianly about Raising Children, week 7") the theme is shown under it as **Theme**. The documents call the speaker by the `--speaker` name rather than "the speaker". They use pronouns only when `--pronouns` gives them, and otherwise repeat the name instead of guessing from it.
+
+There are two outlines. `.outline.docx` is brief: 4–6 main points grouped by idea, each with a few short subpoints, about half a page. `.outline_detailed.docx` follows the talk point by point. YouTube chapters are taken from the detailed one, because its finer points give closer start times.
+
+For a file named `081912AM-Genesis.txt`:
 
 **Sermon:**
 - `081912AM-Genesis.cleaned.docx` — corrected, structured transcript
-- `081912AM-Genesis.outline.docx` — Roman-numeral outline
+- `081912AM-Genesis.outline.docx` — brief Roman-numeral outline
+- `081912AM-Genesis.outline_detailed.docx` — detailed outline, point by point
 - `081912AM-Genesis.summary.docx` — 1–2 page summary
 - `081912AM-Genesis.scripture.docx` — inferred Scripture passage(s) with confidence
 - `081912AM-Genesis.podcast.txt` — 2–3 sentence podcast episode description
 - `081912AM-Genesis.youtube.txt` — YouTube description with chapters (see [YouTube description](#youtube-description))
 
-All sermon documents include a **Speaker** and **Event** header at the top when those values are provided.
+All sermon documents include a **Speaker**, **Scripture** and **Event** header under the title when those values are provided.
 
 **Meeting:**
 - `meeting.cleaned.docx` — corrected transcript
@@ -484,21 +494,23 @@ All sermon documents include a **Speaker** and **Event** header at the top when 
 
 **Talk:**
 - `talk.cleaned.docx` — corrected transcript
-- `talk.outline.docx` — structured outline
+- `talk.outline.docx` — brief outline
+- `talk.outline_detailed.docx` — detailed outline, point by point
 - `talk.summary.docx` — summary with key arguments and takeaways
 - `talk.podcast.txt` — 2–3 sentence podcast episode description
 - `talk.youtube.txt` — YouTube description with chapters (see [YouTube description](#youtube-description))
 
-All talk documents include a **Speaker**, **Title**, and **Event** header when provided.
+All talk documents include a **Speaker** and **Event** header under the title when provided.
 
 **Class** (Higher Ed / adult Sunday School):
 - `110126HE.cleaned.docx` — corrected transcript (everything said in the room)
 - `110126HE.summary.docx` — topic and text, the teaching, the discussion, Scripture referenced, takeaways
-- `110126HE.outline.docx` — the lesson as the teacher led it, with discussion points marked
+- `110126HE.outline.docx` — brief lesson outline
+- `110126HE.outline_detailed.docx` — the lesson as the teacher led it, point by point, with discussion points marked
 - `110126HE.discussion.docx` — questions raised in class, questions left open, and new questions for reflection
 - `110126HE.podcast.txt` — 2–3 sentence description starting "*Teacher* teaching on *topic* in Higher Ed (Adult Sunday School)."
 
-The summary, outline and discussion guide don't name class members ("a participant") and leave out personal details people shared, such as prayer requests. They carry a **Teacher**, **Topic** and **Scripture** header when provided, and an **Event** header that always says Higher Ed (Adult Sunday School) unless `--event` gives another. The file name doesn't matter: any recording run as a class gets all of this, whether it comes from the automatic job, Sermon Helper, the `run_pipeline.command` menu (*Higher Ed class*) or `run_pipeline.py --type class`.
+The summary, outline and discussion guide don't name class members ("a participant") and leave out personal details people shared, such as prayer requests. They carry a **Teacher** and **Scripture** header when provided (plus the title or theme heading), and an **Event** header that always says Higher Ed (Adult Sunday School) unless `--event` gives another. The file name doesn't matter: any recording run as a class gets all of this, whether it comes from the automatic job, Sermon Helper, the `run_pipeline.command` menu (*Higher Ed class*) or `run_pipeline.py --type class`.
 
 ---
 
@@ -531,6 +543,7 @@ drive_publish.py               # Copies finished documents into the Google Drive
 special_events.py              # Conference / special event sessions (special_events.csv)
 youtube_description.py         # <name>.youtube.txt: description + chapters from the outline and .srt
 test_youtube_description.py    # python3 -m unittest test_youtube_description
+test_transcription_summary.py  # python3 -m unittest test_transcription_summary
 youtube_download.py            # yt-dlp: find a service in its playlist; Download from YouTube.command
 sermon_trim.py                 # Sermon start/end from YouTube captions; cut the audio to the sermon
 youtube_sermon.py              # Sermon from YouTube.command: service + Sunday → MMDDYYAM.mp3

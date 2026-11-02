@@ -52,6 +52,8 @@ def run_whisper(audio_path):
         "--fp16", "False",
         "--output_format", "all"
     ], check=True)
+    from run_pipeline import prune_whisper_outputs
+    prune_whisper_outputs(Path.cwd(), Path(audio_path).stem)   # Whisper wrote them here
 
 
 def main():

@@ -1,7 +1,8 @@
 from pathlib import Path
 from transcription_summary_core import (
     call_llm, read_text, write_docx, write_text,
-    clean_transcript, build_metadata_header,
+    clean_transcript, build_document_header, infer_theme,
+    BRIEF_OUTLINE_RULES, DETAILED_OUTLINE_RULES,
 )
 
 # Every class document is labeled with this unless another event is given
@@ -27,11 +28,17 @@ PRIVACY_RULES = (
 )
 
 
-def _rules(teacher: str | None) -> str:
+def _rules(teacher: str | None, pronouns: str | None = None) -> str:
     # Only the name a person entered is used: never one heard in the recording,
-    # which may be wrong (Whisper) or belong to someone else in the room
-    teacher_rule = (f"The teacher is {teacher}. Refer to the teacher only as '{teacher}' or "
-                    "'the teacher' — never by any other name, even if the recording says one."
+    # which may be wrong (Whisper) or belong to someone else in the room.
+    # A name says nothing reliable about pronouns, so they're used only when given.
+    pronoun_rule = (f"Use {pronouns} pronouns for {teacher}." if pronouns else
+                    f"Don't guess {teacher}'s pronouns from the name: repeat the name "
+                    "or rephrase instead.")
+    teacher_rule = (f"The teacher is {teacher}. Call the teacher by that name (the first "
+                    f"name alone is fine after the first mention) rather than 'the teacher' "
+                    f"or 'the speaker', and never by any other name, even if the recording "
+                    f"says one. {pronoun_rule}"
                     if teacher else
                     "Refer to the person leading only as 'the teacher'. Never use a name "
                     "from the recording for them.")
@@ -39,11 +46,11 @@ def _rules(teacher: str | None) -> str:
 
 
 def create_summary(client, cleaned_md: str, teacher: str = None,
-                   topic: str = None, scripture: str = None) -> str:
+                   topic: str = None, scripture: str = None, pronouns: str = None) -> str:
     known = "".join([f"- The lesson's topic is: {topic}\n" if topic else "",
                      f"- The passage studied is: {scripture}\n" if scripture else ""])
     system = (
-        _rules(teacher)
+        _rules(teacher, pronouns)
         + "\nWrite a 1–2 page summary of the class for someone who missed it.\n"
         + known
         + "Use these Markdown headings:\n"
@@ -58,25 +65,27 @@ def create_summary(client, cleaned_md: str, teacher: str = None,
     return call_llm(client, system, cleaned_md).strip()
 
 
-def create_outline(client, cleaned_md: str, teacher: str = None) -> str:
+def create_outline(client, cleaned_md: str, teacher: str = None,
+                   detailed: bool = False, pronouns: str = None) -> str:
     system = (
-        _rules(teacher)
-        + "\nCreate an outline of the lesson as the teacher led it.\n"
-        "Output in Markdown with:\n"
-        "- Roman numerals for major points (I, II, III...)\n"
-        "- Lettered subpoints (A, B, C...)\n"
-        "- Scripture references where they come up\n"
-        "- Where a discussion happened, one subpoint starting 'Discussion:' that "
-        "names the question discussed, not who said what\n"
-        "- Plain text indentation only (spaces or hyphens). "
+        _rules(teacher, pronouns)
+        + ("\nCreate a detailed outline of the lesson as it was led, point by point.\n"
+           if detailed else "\nCreate a brief outline of the lesson.\n")
+        + "Output in Markdown with:\n"
+        + (DETAILED_OUTLINE_RULES if detailed else BRIEF_OUTLINE_RULES)
+        + "- Scripture references where they come up\n"
+        + ("- Where a discussion happened, one subpoint starting 'Discussion:' that "
+           "names the question discussed, not who said what\n" if detailed else "")
+        + "- Plain text indentation only (spaces or hyphens). "
         "Do NOT use HTML entities such as &nbsp;."
     )
     return call_llm(client, system, cleaned_md).strip()
 
 
-def create_discussion_guide(client, cleaned_md: str, teacher: str = None) -> str:
+def create_discussion_guide(client, cleaned_md: str, teacher: str = None,
+                            pronouns: str = None) -> str:
     system = (
-        _rules(teacher)
+        _rules(teacher, pronouns)
         + "\nWrite a short discussion guide from this class, for a small group, a family, "
         "or someone studying on their own.\n"
         "Use these Markdown headings:\n"
@@ -93,14 +102,14 @@ def create_discussion_guide(client, cleaned_md: str, teacher: str = None) -> str
 
 def create_podcast_description(client, cleaned_md: str, teacher: str = None,
                                topic: str = None, scripture: str = None,
-                               event: str = HIGHER_ED_EVENT) -> str:
+                               event: str = HIGHER_ED_EVENT, pronouns: str = None) -> str:
     subject = topic or scripture or "[the lesson's topic or passage]"
     opening = (f"{teacher} teaching on {subject} in {event}." if teacher else
                f"The {event} class studies {subject}.")
     known = (f"- The passage studied is {scripture}; use it exactly as written.\n"
              if scripture else "")
     system = (
-        _rules(teacher)
+        _rules(teacher, pronouns)
         + "\nWrite a 2-3 sentence podcast episode description for this class.\n"
         + known
         + f"- Begin the description with: '{opening}' "
@@ -114,30 +123,38 @@ def create_podcast_description(client, cleaned_md: str, teacher: str = None,
 
 def process_class(client, txt_path: Path, overwrite: bool,
                   out_base: Path = None, teacher: str = None, event: str = None,
-                  title: str = None, scripture: str = None):
+                  title: str = None, scripture: str = None, pronouns: str = None):
     base = out_base if out_base else txt_path.with_suffix("")
     event = event or HIGHER_ED_EVENT
-    meta = build_metadata_header({"Teacher": teacher, "Topic": title,
-                                  "Scripture": scripture, "Event": event})
 
     # The cleaned transcript keeps everything that was said, so it isn't
     # published unless publish_class_transcripts=true (see drive_publish.py)
     print("  Cleaning transcript...")
     cleaned = clean_transcript(client, read_text(txt_path))
+
+    # A class's title is often the series ("... week 7"); the theme names the lesson
+    print("  Naming the lesson's theme...")
+    theme = infer_theme(client, cleaned, "class")
+    meta = build_document_header(title, theme, {"Teacher": teacher, "Scripture": scripture,
+                                                "Event": event})
+    topic = f"{title}: {theme}" if title else theme
     write_docx(base.with_suffix(".cleaned.docx"), meta + cleaned, overwrite)
 
     print("  Generating class summary...")
-    summary = create_summary(client, cleaned, teacher, title, scripture)
+    summary = create_summary(client, cleaned, teacher, topic, scripture, pronouns)
     write_docx(base.with_suffix(".summary.docx"), meta + summary, overwrite)
 
-    print("  Generating lesson outline...")
-    outline = create_outline(client, cleaned, teacher)
+    print("  Generating lesson outlines...")
+    outline = create_outline(client, cleaned, teacher, pronouns=pronouns)
     write_docx(base.with_suffix(".outline.docx"), meta + outline, overwrite)
+    detailed = create_outline(client, cleaned, teacher, detailed=True, pronouns=pronouns)
+    write_docx(base.with_suffix(".outline_detailed.docx"), meta + detailed, overwrite)
 
     print("  Writing discussion guide...")
-    guide = create_discussion_guide(client, cleaned, teacher)
+    guide = create_discussion_guide(client, cleaned, teacher, pronouns)
     write_docx(base.with_suffix(".discussion.docx"), meta + guide, overwrite)
 
     print("  Writing podcast description...")
-    podcast = create_podcast_description(client, cleaned, teacher, title, scripture, event)
+    podcast = create_podcast_description(client, cleaned, teacher, theme, scripture, event,
+                                         pronouns)
     write_text(base.with_suffix(".podcast.txt"), podcast, overwrite)

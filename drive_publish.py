@@ -37,7 +37,7 @@ Settings (config.txt):
     publish_class_transcripts
                       true to include a class's full transcript as well (default
                       false: unlike the summaries, it has everything members said)
-    publish_captions  true to add .srt/.vtt caption files (default false; for a
+    publish_captions  true to add the .srt caption file (default false; for a
                       class, only with publish_class_transcripts)
 
 USAGE:
@@ -58,6 +58,7 @@ from recording_names import parse_recording_name
 SERMON_FILES = [                    # (output suffix, published name)
     (".summary.docx", "Summary.docx"),
     (".outline.docx", "Outline.docx"),
+    (".outline_detailed.docx", "Detailed outline.docx"),
     (".scripture.docx", "Scripture.docx"),
     (".cleaned.docx", "Transcript.docx"),
     (".podcast.txt", "Podcast description.txt"),
@@ -65,11 +66,12 @@ SERMON_FILES = [                    # (output suffix, published name)
 CLASS_FILES = [
     (".summary.docx", "Summary.docx"),
     (".outline.docx", "Outline.docx"),
+    (".outline_detailed.docx", "Detailed outline.docx"),
     (".discussion.docx", "Discussion guide.docx"),
     (".podcast.txt", "Podcast description.txt"),
 ]
 CLASS_TRANSCRIPT = [(".cleaned.docx", "Transcript.docx")]
-CAPTION_FILES = [(".srt", "Captions.srt"), (".vtt", "Captions.vtt")]
+CAPTION_FILES = [(".srt", "Captions.srt")]
 MAX_FOLDER_NAME = 120
 
 

@@ -56,6 +56,64 @@ def build_metadata_header(fields: dict) -> str:
     return ("\n".join(lines) + "\n\n---\n\n") if lines else ""
 
 
+def build_document_header(title: str | None, theme: str | None, fields: dict) -> str:
+    """
+    A document's top: the title as a heading, then the metadata block.
+
+    A given title (often a series name, e.g. 'Thinking Christianly about
+    Raising Children, week 7') stays the heading and the inferred theme goes
+    beside the other fields; without a title the theme is the heading.
+    """
+    heading = title or theme
+    extra = {"Theme": theme} if title and theme and theme.lower() != title.lower() else {}
+    return (f"# {heading}\n\n" if heading else "") + build_metadata_header({**fields, **extra})
+
+
+def infer_theme(client: "OpenAI", cleaned_md: str, kind: str = "talk") -> str:
+    """A short title naming what a sermon, talk or class was about."""
+    system = (
+        f"Give a short title (3–8 words) naming the main theme of this {kind}.\n"
+        "- Title case. Return only the title: no quotes, no 'Title:', no speaker, "
+        "event, series or week number."
+    )
+    return call_llm(client, system, cleaned_md).strip().strip('"“”*#').strip()
+
+
+def speaker_rule(name: str | None, pronouns: str | None = None,
+                 role: str = "speaker") -> str:
+    """
+    Prompt line telling the model to call the person leading by name.
+
+    Without it the documents say 'the speaker' throughout. A name says nothing
+    reliable about pronouns, so they are used only when given.
+    """
+    if not name:
+        return ""
+    pronoun_rule = (f"Use {pronouns} pronouns for {name}." if pronouns else
+                    f"Don't guess {name}'s pronouns from the name: repeat the name or "
+                    "rephrase instead.")
+    return (f"- The {role} is {name}. Refer to them by name (a shorter form, such as the "
+            f"first name, is fine after the first mention), not as 'the {role}' or "
+            f"'the speaker'. {pronoun_rule}\n")
+
+
+# Shared by the sermon, talk and class outlines: the short one is the
+# .outline.docx people read; the detailed one follows the talk point by point
+# (.outline_detailed.docx, and the source of YouTube chapters).
+BRIEF_OUTLINE_RULES = (
+    "- 4 to 6 major points (I, II, III...), grouped by idea rather than in the order "
+    "every topic came up\n"
+    "- 2 to 4 short lettered subpoints (A, B, C...) under each, a phrase rather than a "
+    "sentence\n"
+    "- Leave out announcements, scheduling, opening and closing prayers\n"
+    "- About half a page in all\n"
+)
+DETAILED_OUTLINE_RULES = (
+    "- Roman numerals for major points (I, II, III...)\n"
+    "- Lettered subpoints (A, B, C...)\n"
+)
+
+
 # -------------------------------------------------
 # FILE OUTPUT HELPERS
 # -------------------------------------------------

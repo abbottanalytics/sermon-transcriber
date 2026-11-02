@@ -58,6 +58,16 @@ MEDIA_EXTENSIONS = AUDIO_EXTENSIONS | VIDEO_EXTENSIONS
 
 
 DEFAULT_WHISPER_MODEL = "turbo"
+# Whisper can write one format or all of them. Of its timestamped formats only
+# .srt is kept (YouTube chapters, captions, sermon analysis read it); the
+# others just clutter the folder. .txt is the transcript everything else uses.
+WHISPER_DISCARD = (".json", ".tsv", ".vtt")
+
+
+def prune_whisper_outputs(output_dir: Path, stem: str):
+    """Delete the Whisper formats nothing uses, keeping .txt and .srt."""
+    for ext in WHISPER_DISCARD:
+        (output_dir / (stem + ext)).unlink(missing_ok=True)
 
 
 def run_whisper(audio_path: Path, output_dir: Path, model: str = DEFAULT_WHISPER_MODEL):
@@ -74,6 +84,7 @@ def run_whisper(audio_path: Path, output_dir: Path, model: str = DEFAULT_WHISPER
         ],
         check=True,
     )
+    prune_whisper_outputs(output_dir, audio_path.stem)
 
 
 def resolve_transcript(input_path: Path, skip_whisper: bool, output_dir: Path,
@@ -143,7 +154,8 @@ def process_file(client, input_path: Path, content_type: str, overwrite: bool,
                  schedule: dict | None = None,
                  whisper_model: str = DEFAULT_WHISPER_MODEL,
                  scripture: str | None = None,
-                 youtube: dict | None = None):
+                 youtube: dict | None = None,
+                 pronouns: str | None = None):
     """youtube: extra fields for <name>.youtube.txt (sermon and talk): conference,
     session, notes, timestamp_offset, intro_length — see youtube_description.py."""
     # Determine where outputs will land so we can check before running Whisper
@@ -187,17 +199,19 @@ def process_file(client, input_path: Path, content_type: str, overwrite: bool,
         from sermon_summary import process_sermon
         process_sermon(client, txt_path, overwrite, out_base=out_base,
                        speaker=speaker, event=event, title=title, scripture=scripture,
-                       youtube=youtube)
+                       youtube=youtube, pronouns=pronouns)
 
     elif content_type == "talk":
         from talk_summary import process_talk
         process_talk(client, txt_path, overwrite, out_base=out_base,
-                     speaker=speaker, event=event, title=title, youtube=youtube)
+                     speaker=speaker, event=event, title=title, youtube=youtube,
+                     pronouns=pronouns)
 
     elif content_type == "class":
         from class_summary import process_class
         process_class(client, txt_path, overwrite, out_base=out_base,
-                      teacher=speaker, event=event, title=title, scripture=scripture)
+                      teacher=speaker, event=event, title=title, scripture=scripture,
+                      pronouns=pronouns)
 
     elif content_type == "meeting":
         from meeting_summary import process_meeting
@@ -219,6 +233,8 @@ def main():
                     help="Minutes verbosity (meeting only)")
     ap.add_argument("--output-dir", help="Directory for output files (default: same folder as input)")
     ap.add_argument("--speaker", help="Speaker name with title (e.g. 'Pastor Joel Wood')")
+    ap.add_argument("--pronouns", help="The speaker's pronouns, e.g. 'she/her' (otherwise the "
+                                       "documents repeat the name rather than guess)")
     ap.add_argument("--schedule", help="Path to preaching schedule CSV for automatic speaker lookup")
     ap.add_argument("--event", help="Service or event name (e.g. 'Morning Worship')")
     ap.add_argument("--title", help="Talk or sermon title, or a class's topic")
@@ -301,6 +317,7 @@ def main():
             schedule=schedule,
             scripture=args.scripture or None,
             youtube=youtube,
+            pronouns=args.pronouns or None,
         )
 
     print("\nDONE.")
