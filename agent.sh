@@ -144,16 +144,41 @@ cmd_power_schedule() {
     local wake day time
     wake="$(cd "$CODE_DIR" && "$PY" agent_schedule.py wake-time)" || exit 1
     read -r day time <<< "$wake"
-    echo "Current power schedule:"
-    pmset -g sched | sed 's/^/  /'
+    local current
+    current="$(pmset -g sched)"
+    echo "What's set now:"
+    if [[ "$current" == *"Repeating power events"* ]]; then
+        echo "$current" | sed 's/^/  /'
+    else
+        echo "  No repeating wake or power-on schedule."
+    fi
     echo ""
-    echo "This sets the Mac to wake (or power on, if it was shut down) at $time every"
-    echo "week (pmset day '$day'), just before the first run. Each run then keeps it"
-    echo "awake until the next run that day. It REPLACES any repeating schedule shown"
-    echo "above. Needs an admin password."
-    read -rp "Continue? [y/N] " answer
-    [[ "$answer" == [yY]* ]] || { echo "No change."; return 0; }
+    # pmset's day letters → names (one letter per day the first check runs on)
+    local names=() letter
+    for (( i = 0; i < ${#day}; i++ )); do
+        letter="${day:i:1}"
+        case "$letter" in
+            M) names+=(Monday) ;; T) names+=(Tuesday) ;; W) names+=(Wednesday) ;;
+            R) names+=(Thursday) ;; F) names+=(Friday) ;; S) names+=(Saturday) ;;
+            U) names+=(Sunday) ;;
+        esac
+    done
+    echo "If you answer y, this Mac will wake up (or turn on, if it's shut down)"
+    echo "at $time every ${names[*]}, just before the first check."
+    echo "Each check then keeps it awake until the next one that day."
+    echo ""
+    if [[ "$current" == *"Repeating power events"* ]]; then
+        echo "A Mac has only one repeating schedule, so this REPLACES the one above."
+        echo "If someone set that one up on purpose, check with them first."
+        echo ""
+    fi
+    echo "Changing when the Mac turns on is a system setting, so macOS asks for an"
+    echo "administrator's password next. Nothing shows as you type it; that's normal."
+    read -rp "Set the weekly wake? [y/N] " answer
+    [[ "$answer" == [yY]* ]] || { echo "No change: the Mac won't wake itself for the checks."; return 0; }
     sudo pmset repeat wakeorpoweron "$day" "$time"
+    echo ""
+    echo "Done. The schedule is now:"
     pmset -g sched | sed 's/^/  /'
 }
 

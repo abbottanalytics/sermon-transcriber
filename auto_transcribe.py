@@ -54,7 +54,7 @@ from pathlib import Path
 
 from app_home import ensure, read_config, set_config_value
 from drive_publish import publish, publish_pending
-from recording_names import parse_recording_name
+from recording_names import date_problem, parse_recording_name
 from run_pipeline import AUDIO_EXTENSIONS, DEFAULT_WHISPER_MODEL, process_file
 
 LEDGER_NAME = "processed.json"
@@ -256,7 +256,8 @@ def schedule_details(rec, schedules: ScheduleSource) -> tuple[dict, list[str]]:
 # ── Scan ──────────────────────────────────────────────────────────────────────
 
 def scan(watch_dir: Path, ledger: Ledger, process_from: date, settle_minutes: int):
-    """Return (to_process, waiting, newly_ignored) lists of Paths."""
+    """Return (to_process, waiting, newly_ignored): lists of Paths, and of
+    (Path, reason) for newly ignored files (reason None: not a recording name)."""
     to_process, waiting, newly_ignored = [], [], []
     now = time.time()
 
@@ -271,9 +272,15 @@ def scan(watch_dir: Path, ledger: Ledger, process_from: date, settle_minutes: in
         if rec is None:
             # Only mention odd names for files that arrived after process_from
             if entry is None and date.fromtimestamp(mtime) >= process_from:
-                newly_ignored.append(audio)
+                newly_ignored.append((audio, None))
             continue
         if rec.date < process_from:
+            continue
+        wrong_date = date_problem(audio.name, rec, date.fromtimestamp(mtime))
+        if wrong_date:
+            # Also catches one processed before this check existed
+            if entry is None or entry["status"] != "ignored" or file_changed(entry, audio):
+                newly_ignored.append((audio, wrong_date))
             continue
         if entry and not file_changed(entry, audio):
             if entry["status"] in ("done", "gave_up"):
@@ -412,17 +419,28 @@ def run(dry_run: bool) -> int:
             print(f"  would process: {audio.relative_to(watch_dir)}{why}")
         for audio in waiting:
             print(f"  still settling: {audio.relative_to(watch_dir)}")
-        for audio in newly_ignored:
-            print(f"  not a recording name, ignored: {audio.relative_to(watch_dir)}")
+        for audio, reason in newly_ignored:
+            print(f"  ignored, {reason or 'not a recording name'}: {audio.relative_to(watch_dir)}")
         if not (to_process or waiting or newly_ignored):
             print("  nothing new")
         return 0
 
-    for audio in newly_ignored:
+    misdated = [(audio, reason) for audio, reason in newly_ignored if reason]
+    for audio, reason in newly_ignored:
         ledger.record(audio, status="ignored")
-        log.info("Ignored (not a recording name): %s", audio)
-        notify(f"Skipped {audio.name}: name isn't MMDDYY + AM/PM/HE/SS, or a special "
-               f"event listed in special_events.csv.")
+        log.info("Ignored (%s): %s", reason or "not a recording name", audio)
+        if not reason:
+            notify(f"Skipped {audio.name}: name isn't MMDDYY + AM/PM/HE/SS, or a special "
+                   f"event listed in special_events.csv.")
+    # Misdated names come in batches (an old year's folder): one notification
+    if misdated:
+        audio, reason = misdated[0]
+        reason += "" if reason.endswith("?") else "."
+        notify(f"Skipped {audio.name}: {reason} Rename it with the right date."
+               if len(misdated) == 1 else
+               f"Skipped {len(misdated)} recordings dated after their files were saved, "
+               f"e.g. {audio.name} ({reason.split('; ', 1)[-1] if '; ' in reason else 'wrong date'}). "
+               f"The list is in logs/auto.log.")
     for audio in waiting:
         log.info("Waiting for %s to finish copying.", audio.name)
 

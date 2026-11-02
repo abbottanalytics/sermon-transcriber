@@ -17,6 +17,9 @@ their dates in special_events.csv: 110726RC2.mp3 is session RC2 on 11/7/26
 (see special_events.py). Any other name isn't a recording the automatic job
 processes.
 
+A name dated after its file was saved is a typo (032128AM for 3/28/21 is
+"3/21/28"), so the automatic job skips it too: see date_problem().
+
 USAGE (as a CLI, for testing):
     python3 recording_names.py 110126AM 110126he.mp3 110726RC2.mp3 sermon.mp3
 """
@@ -24,7 +27,7 @@ USAGE (as a CLI, for testing):
 import re
 import sys
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 # service code → (kind, event name used in the documents)
 SERVICES = {
@@ -73,6 +76,24 @@ def parse_recording_name(name: str) -> Recording | None:
     if row is None:
         return None
     return Recording(recorded, code + number, "sermon", row["event"], row)
+
+
+def date_problem(name: str, rec: Recording, saved: date) -> str | None:
+    """Why the date in a recording's name can't be right, or None. A
+    recording can't be dated after its file was saved (a day's slack for a
+    late-night export). The usual slip is the day and year swapped, which is
+    suggested when that reading fits."""
+    if rec.date <= saved + timedelta(days=1):
+        return None
+    problem = f"its date ({rec.date:%-m/%-d/%y}) is after the file was saved ({saved:%-m/%-d/%y})"
+    month, day, yy = name[0:2], name[2:4], name[4:6]
+    try:
+        swapped = date(2000 + int(day), int(month), int(yy))
+    except ValueError:
+        return problem
+    if 0 <= (saved - swapped).days <= 60:
+        problem += f"; maybe {month}{yy}{day}{name[6:]}?"
+    return problem
 
 
 if __name__ == "__main__":

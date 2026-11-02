@@ -66,6 +66,7 @@ At each check, for every new recording:
 | *…Review in Sermon Helper: preacher initials 'SE' aren't in speaker_initials.csv* | The schedule's preacher wasn't recognized | Run Sermon Helper and pick the speaker (below) |
 | *…Review in Sermon Helper: 11/1/26 AM isn't in the preaching schedule* | That Sunday's row is missing from the pulpit sheet | Run Sermon Helper and enter the speaker, title and passage |
 | *Skipped sermon.mp3: name isn't MMDDYY + AM/PM/HE/SS, or a special event…* | The file name wasn't recognized | Rename it, e.g. `110126AM.mp3`. For an event session, check the code is in `special_events.csv` for that date |
+| *Skipped 032128AM.mp3: its date (3/21/28) is after the file was saved (3/28/21); maybe 032821AM.mp3?* | The date in the name is a typo (here the day and year are swapped) | Rename it with the right date, e.g. `032821AM.mp3` |
 | *Special events are off: special_events.csv line 29: …* | A mistake in the special events file | Tell Dean; that line needs fixing |
 | *Problem processing 110126AM.mp3 — see logs/auto.log* | Something went wrong, usually the internet | Nothing at first: it tries again at the next check (at least two hours later), up to 3 times. If it keeps failing, tell Dean |
 | *Couldn't copy … to Google Drive* | Google Drive isn't running or is signed out | Open **Google Drive** (in Applications) and make sure it's signed in as newlifeavdept@gmail.com. The files are copied at the next check |

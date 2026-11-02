@@ -75,10 +75,14 @@ class SermonFromYouTube:
         return self._client
 
     def folder_for(self, when: date) -> Path:
-        """Where an Audacity export of that Sunday would go."""
-        if self.watch_dir:
-            return self.watch_dir / str(when.year)
-        return Path.home() / "Downloads"
+        """Where an Audacity export of that Sunday would go: the year's folder
+        in the Sermons folder, whatever it's called ("2026", "2026 Sermons")."""
+        if not self.watch_dir:
+            return Path.home() / "Downloads"
+        year = str(when.year)
+        existing = sorted(p for p in self.watch_dir.glob(f"{year}*")
+                          if p.is_dir() and not p.name[len(year):len(year) + 1].isdigit())
+        return existing[0] if existing else self.watch_dir / year
 
     # ── Which video ───────────────────────────────────────────────────────
 
